@@ -1,0 +1,125 @@
+# pytest: disable
+
+taskname: '+ CatLIP ViT-H/16 [DataComp]'
+
+_anchor_vocab_size: &_anchor_vocab_size 24320
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  mixed_precision_dtype: "bfloat16"
+  grad_clip: 1.0
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+
+dataset:
+  # root_train does not matter for img_text_tar dataset because dataset information is expected
+  # to be contained in metadata file.
+  root_train: ""
+  disable_val: true
+  # effective batch size is 65k (256 images per GPU * 8 A100 40 GB GPUs * 32 Nodes)
+  train_batch_size0: 256
+  workers: -1 # use all CPUs
+  persistent_workers: true
+  pin_memory: true
+  name: "wordnet_tagged_classification"
+  category: "classification"
+  wordnet_tagged_classification:
+    vocab_size: *_anchor_vocab_size
+    # Uncomment these lines and replace with the path to metadata file containing dataset information
+    # and vocabulary file containing synset information.
+    # metadata_file: "PATH_TO_METADADATA_FILE"
+    # vocab_file: "PATH_TO_VOCAB_FILE"
+
+image_augmentation:
+  # training related augmentations
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+
+sampler:
+  name: "variable_batch_sampler"
+  use_shards: true
+  # In the 0-th epoch, data is downloaded to local machine from remote location.
+  # Therefore, we process the data sequentially in the 0-th epoch and start shuffling
+  # from first epoch onwards.
+  start_shuffling_from_epoch: 1
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    max_n_scales: 25
+    min_crop_size_width: 128
+    max_crop_size_width: 320
+    min_crop_size_height: 128
+    max_crop_size_height: 320
+    check_scale: 16
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "classification"
+      loss_weight: 1.0
+      classification:
+        name: "binary_cross_entropy"
+        binary_cross_entropy:
+          reduction: "batch_mean"
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+
+optim:
+  no_decay_bn_filter_bias: true
+  weight_decay: 0.2
+  name: "adamw"
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+
+scheduler:
+  is_iteration_based: true
+  max_iterations: 200000
+  name: cosine
+  warmup_init_lr: 1.e-06
+  warmup_iterations: 10000
+  cosine:
+    max_lr: 0.0004
+    min_lr: 0.000004
+
+model:
+  activation_checkpointing: true
+  classification:
+    name: "vit"
+    n_classes: *_anchor_vocab_size
+    vit:
+      mode: "huge"
+      norm_layer: "layer_norm_fp32"
+      use_flash_attention: true
+  # use rangeaugment
+  learn_augmentation: 
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  activation:
+    name: "gelu"
+  layer:
+    conv_init: "kaiming_normal"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+  
+ema:
+  enable: true
+  momentum: 0.0005
+
+stats:
+  train: ["loss"]
+  val: [ "loss" ]
+  checkpoint_metric: "loss"
+  checkpoint_metric_max: false

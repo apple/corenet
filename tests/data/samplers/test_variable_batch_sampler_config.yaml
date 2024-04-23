@@ -1,0 +1,12 @@
+# pytest: disable
+sampler:
+  name: "variable_batch_sampler"
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    max_n_scales: 5
+    min_crop_size_width: 128
+    max_crop_size_width: 320
+    min_crop_size_height: 128
+    max_crop_size_height: 320
+    check_scale: 32

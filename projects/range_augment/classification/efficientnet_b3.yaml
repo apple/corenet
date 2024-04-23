@@ -1,0 +1,121 @@
+taskname: '+ EfficientNet-B3'
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  channels_last: true
+  accum_freq: 2
+dataset:
+  root_train: "/mnt/imagenet/training"
+  root_val: "/mnt/imagenet/validation"
+  name: "imagenet"
+  category: "classification"
+  train_batch_size0: 128 # effective batch size is 2048 (128 * 2 * 8 GPUs)
+  val_batch_size0: 100
+  eval_batch_size0: 100
+  workers: -1
+  persistent_workers: true
+  pin_memory: true
+  collate_fn_name_train: "image_classification_data_collate_fn"
+  collate_fn_name_val: "image_classification_data_collate_fn"
+  collate_fn_name_test: "image_classification_data_collate_fn"
+
+image_augmentation:
+  # training related parameters
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  mixup:
+    enable: true
+    alpha: 0.2
+    p: 1.0
+  cutmix:
+    enable: true
+    alpha: 1.0
+    p: 1.0
+  # validation related parameters
+  resize:
+    enable: true
+    size: 320
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 320
+sampler:
+  name: "variable_batch_sampler"
+  vbs:
+    crop_size_width: 300
+    crop_size_height: 300
+    max_n_scales: 10
+    min_crop_size_width: 160
+    max_crop_size_width: 448
+    min_crop_size_height: 160
+    max_crop_size_height: 448
+    check_scale: 32
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "classification"
+      loss_weight: 1.0
+      classification:
+        name: "cross_entropy"
+        cross_entropy:
+          label_smoothing: 0.1
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 5 ]
+        curriculum_method: "cosine"
+optim:
+  name: "sgd"
+  weight_decay: 4.e-5
+  no_decay_bn_filter_bias: true
+  sgd:
+    momentum: 0.9
+    nesterov: true
+scheduler:
+  name: "cosine"
+  is_iteration_based: false
+  max_epochs: 400
+  warmup_iterations: 3000
+  warmup_init_lr: 0.1
+  cosine:
+    max_lr: 0.8
+    min_lr: 4.e-4
+model:
+  classification:
+    name: "efficientnet"
+    n_classes: 1000
+    activation:
+      name: "swish"
+    efficientnet:
+      mode: "b3"
+      stochastic_depth_prob: 0.0
+    classifier_dropout: 0.0
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "swish"
+    inplace: true
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+ema:
+  enable: true
+  momentum: 0.0005
+stats:
+  val: [ "loss", "top1", "top5" ]
+  train: ["loss"]
+  checkpoint_metric: "top1.logits"
+  checkpoint_metric_max: true

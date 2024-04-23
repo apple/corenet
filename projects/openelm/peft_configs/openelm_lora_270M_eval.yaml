@@ -1,0 +1,79 @@
+# pytest: disable
+
+taskname: '+ [OpenELM-LoRA-270M Eval]'
+
+_anchor_context_length: &_anchor_context_length 2048
+# actual vocab size is 32001 after adding padding token, so we add few extra tokens to make it more hardware friendly
+# for classification layer in LM model
+_anchor_vocab_size: &_anchor_vocab_size 32128 
+_anchor_padding_index: &_anchor_padding_index 32000
+
+common:
+  run_label: "eval"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  mixed_precision_dtype: "bfloat16"
+
+dataset:
+  category: "language_modeling"
+  # NOTE: dataset paths are set by llmadapters-evaluation.dataset-dir.
+  # The default value is usually suitable.
+
+model:
+  activation_checkpointing: false
+  language_modeling:
+    name: "general_gpt"
+    general_gpt:
+      model_name: "OpenELM-270M"
+      vocab_size: *_anchor_vocab_size
+      max_context_length: *_anchor_context_length
+      padding_index: *_anchor_padding_index
+  lora:
+    use_lora: true
+    config:
+      - regex: '.*token_embedding.*'
+        module_type: 'embedding'
+        params:
+          adapter_name: lora
+          r: &r 32
+          lora_alpha: &alpha 32
+          lora_dropout: &dropout 0.1
+          init_lora_weights: &ilw true
+          use_rslora: &ur false
+          use_dora: &ud false
+      - regex: '.*out_proj.*'
+        module_type: 'linear'
+        params:
+          adapter_name: lora
+          r: *r
+          lora_alpha: *alpha
+          lora_dropout: *dropout
+          init_lora_weights: *ilw
+          use_rslora: *ur
+          use_dora: *ud
+      - regex: '.*qkv_proj.*'
+        module_type: 'linear'
+        params:
+          adapter_name: lora
+          r: *r
+          lora_alpha: *alpha
+          lora_dropout: *dropout
+          init_lora_weights: *ilw
+          use_rslora: *ur
+          use_dora: *ud
+      - regex: '.*proj_\d.*'
+        module_type: 'linear'
+        params:
+          adapter_name: lora
+          r: *r
+          lora_alpha: *alpha
+          lora_dropout: *dropout
+          init_lora_weights: *ilw
+          use_rslora: *ur
+          use_dora: *ud
+
+lm_eval_wrapper:
+  add_sot_token: true
+llmadapters_evaluation:
+  multiple_choice: true

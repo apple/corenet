@@ -1,0 +1,62 @@
+psutil==5.9.8
+ujson==5.9.0
+scikit-learn==1.4.1.post1
+scikit-image==0.22.0
+pyyaml==6.0.1
+
+# requirement for Pytorch, Torchvision, TorchText.
+# This section must be synchronized with the Dockerfile for
+# the image used in CI
+torch==2.2.1
+torchvision==0.17.1
+torchtext==0.17.1
+torchaudio==2.2.1
+torchdata==0.7.1
+
+# dependency for coremltools
+coremltools==7.1
+
+# dependency for MSCOCO dataset
+pycocotools==2.0.7
+
+# dependency for cityscape evaluation
+cityscapesscripts==2.2.2
+
+# added as a dependency to reproduce 3rd party models
+pytorchvideo==0.1.5
+
+# PyAV for video decoding
+av==12.0.0
+
+# FVCore for FLOP calculation
+fvcore==0.1.5.post20221221
+
+# black for reformatting
+black==24.4.0
+isort==5.13.2
+
+# testing
+pytest==8.1.1
+pytest-mock==3.14.0
+pytest-xdist==3.5.0
+pytest-timeout==2.3.1
+
+ftfy==6.2.0
+
+# for hdf5 reading
+h5py==3.10.0
+
+# for reading byte data
+pybase64==1.3.2
+
+# For OpenAI's clip tokenizer
+regex==2023.12.25
+pyarrow==15.0.2
+
+numpy==1.26.4
+scipy==1.13.0
+pandas==2.2.1
+tqdm==4.66.2
+setuptools==69.2.0
+
+boto3==1.28.30

@@ -1,0 +1,15 @@
+# pytest: disable
+
+dataset:
+  # The training path in 'img_text_tar' dataset is infered from metadata file path.
+  root_train: ""
+  disable_val: true
+
+  name: "img_text_tar"
+  category: "multi_modal_image_text"
+  multi_modal_img_text:
+    img_text_tar:
+      metadata_file: ".corenet_data_cache/metadata.pkl"
+
+text_tokenizer:
+  name: "openai_clip"

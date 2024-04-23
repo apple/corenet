@@ -1,0 +1,46 @@
+# pytest: disable
+
+taskname: '+ ResNet-50 SSD'
+
+common:
+  run_label: "train"
+  accum_freq: 1
+  accum_after_epoch: -1
+  log_freq: 100
+  auto_resume: true
+  mixed_precision: true
+
+dataset:
+  root_train: "tests/data/coco"
+  root_val: "tests/data/coco"
+  category: "classification"
+  train_batch_size0: 2
+  val_batch_size0: 2
+  eval_batch_size0: 1
+  workers: 0
+  persistent_workers: false
+  pin_memory: true
+  name: "mock_coco"
+
+image_augmentation:
+  # training related parameters
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  # validation related parameters
+  resize:
+    enable: true
+    size: 64
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 64
+
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 64
+    crop_size_height: 64
+

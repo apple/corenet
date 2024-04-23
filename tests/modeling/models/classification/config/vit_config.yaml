@@ -1,0 +1,14 @@
+# pytest: disable
+
+dataset:
+  name: "imagenet"
+  category: "classification"
+
+model:
+  classification:
+    name: "vit"
+    vit:
+      mode: "test"
+      norm_layer: "layer_norm_fp32"
+  activation:
+    name: "gelu"

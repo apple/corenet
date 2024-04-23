@@ -1,0 +1,13 @@
+# pytest: disable
+
+dataset:
+  name: "general_lm"
+  category: "language_modeling"
+
+model:
+  language_modeling:
+    name: "general_gpt"
+    general_gpt:
+      model_name: "gpt-test"
+      vocab_size: 100
+      max_context_length: 100

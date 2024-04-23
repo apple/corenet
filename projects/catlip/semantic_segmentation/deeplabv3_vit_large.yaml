@@ -1,0 +1,137 @@
+# pytest: disable
+
+taskname: '+ DeepLabv3 ViT-L'
+
+common:
+  run_label: "train"
+  accum_freq: 1
+  log_freq: 100
+  auto_resume: true
+  save_all_checkpoints: true
+
+dataset:
+  root_train: "/mnt/vision_datasets/ADEChallengeData2016/"
+  root_val: "/mnt/vision_datasets/ADEChallengeData2016/"
+  name: "ade20k"
+  category: "segmentation"
+  # effective base batch size is 32 (4 images per GPU * 8 A100 GPUs)
+  train_batch_size0: 4
+  val_batch_size0: 4
+  workers: -1 # use all CPUs
+  persistent_workers: true
+  pin_memory: true
+
+image_augmentation:
+  random_crop:
+    enable: true
+    seg_class_max_ratio: 0.75
+    pad_if_needed: true
+    mask_fill: 0 # background idx is 0
+  random_horizontal_flip:
+    enable: true
+  resize:
+    enable: true
+    size: [512, 512]
+    interpolation: "bicubic"
+  random_short_size_resize:
+    enable: true
+    interpolation: "bicubic"
+    short_side_min: 256
+    short_side_max: 768
+    max_img_dim: 1024
+
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 512
+    crop_size_height: 512
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "segmentation"
+      loss_weight: 1.0
+      segmentation:
+        name: "cross_entropy"
+        cross_entropy:
+          ignore_index: -1
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+
+optim:
+  name: "adamw"
+  no_decay_bn_filter_bias: true
+  weight_decay: 0.1
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+
+scheduler:
+  name: "cosine"
+  max_epochs: 50
+  warmup_iterations: 500
+  warmup_init_lr: 1.e-6
+  cosine:
+    max_lr: 3.e-5
+    min_lr: 3.e-6
+
+model:
+  activation_checkpointing: true
+  # During object detection training, we do not use classifier and cls_token, so we exclude them
+  resume_exclude_scopes: [ "classifier" , "cls_token" ]
+  segmentation:
+    name: "encoder_decoder"
+    n_classes: 150
+    norm_layer: "layer_norm_fp32"
+    seg_head: "deeplabv3"
+    output_stride: 8
+    deeplabv3:
+      aspp_dropout: 0.1
+      aspp_out_channels: 512
+      aspp_rates: [ 12, 24, 36 ]
+  classification:
+    name: "vit"
+    # Initalize the model with a pre-trained model and finetune it.
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/catlip/pretrained_models/vit_large.pt"
+    n_classes: 24320
+    vit:
+      mode: "large"
+      norm_layer: "layer_norm_fp32"
+      use_flash_attention: true
+      no_cls_token: true
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  activation:
+    name: "gelu"
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+
+ema:
+  enable: true
+  momentum: 0.0001
+
+stats:
+  val: [ "loss", "iou"]
+  train: ["loss"]
+  checkpoint_metric: "iou"
+  checkpoint_metric_max: true
+
+# During evaluation (with corenet-eval-seg), we follow following steps:
+#  1. Determine and store the size of input image as metadata.
+#  2. Resize image to fixed size.
+#  3. Make a prediction.
+#  4. Resize the predicted mask to the same size as original input image.
+#  5. Compute results.
+evaluation:
+  segmentation:
+    resize_input_images_fixed_size: true
+    mode: "validation_set"

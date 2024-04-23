@@ -1,0 +1,47 @@
+# pytest: disable
+
+dataset:
+  root_train: "/mnt/vision_datasets/cocostuff/"
+  root_val: "/mnt/vision_datasets/cocostuff/"
+  name: "coco_stuff"
+  category: "segmentation"
+  train_batch_size0: 4
+  val_batch_size0: 4
+  eval_batch_size0: 2
+  workers: 4
+  persistent_workers: false
+  pin_memory: false
+image_augmentation:
+  random_crop:
+    enable: true
+    seg_class_max_ratio: 0.75
+    pad_if_needed: true
+    mask_fill: 255 # Same as the ignore index value in the loss function
+  random_horizontal_flip:
+    enable: true
+  resize:
+    enable: true
+    size: [64, 64]
+    interpolation: "bilinear"
+  random_short_size_resize:
+    enable: true
+    interpolation: "bilinear"
+    short_side_min: 32
+    short_side_max: 64
+    max_img_dim: 64
+  photo_metric_distort:
+    enable: true
+  random_rotate:
+    enable: true
+    angle: 10
+    mask_fill: 255 # Same as the ignore index value in the loss function
+  random_gaussian_noise:
+    enable: true
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 64
+    crop_size_height: 64
+evaluation:
+  segmentation:
+    resize_input_images: false

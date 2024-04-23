@@ -1,0 +1,104 @@
+# pytest: disable
+# This is a dummy configuration for testing classification task end-to-end
+taskname: '+ MobileViTv2'
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  channels_last: true
+  tensorboard_logging: false
+  grad_clip: 10.0
+dataset:
+  root_train: "/mnt/imagenet/training" # Please update the location of training set
+  root_val: "/mnt/imagenet/validation" # Please update the location of validation set
+  name: "mock_imagenet"
+  category: "classification"
+  train_batch_size0: 2
+  val_batch_size0: 2
+  eval_batch_size0: 2
+  workers: 0
+  persistent_workers: true
+  pin_memory: true
+  collate_fn_name_train: image_classification_data_collate_fn
+  collate_fn_name_val: image_classification_data_collate_fn
+  collate_fn_name_test: image_classification_data_collate_fn
+
+image_augmentation:
+  random_resized_crop:
+    enable: true
+    interpolation: "bicubic"
+  random_horizontal_flip:
+    enable: true
+  rand_augment:
+    enable: true
+  random_erase:
+    enable: true
+    p: 0.25
+  mixup:
+    enable: true
+    alpha: 0.2
+  cutmix:
+    enable: true
+    alpha: 1.0
+  resize:
+    enable: true
+    size: 64
+    interpolation: "bicubic"
+  center_crop:
+    enable: true
+    size: 64
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 64
+    crop_size_height: 64
+loss:
+  category: "classification"
+  classification:
+    name: "cross_entropy"
+    cross_entropy:
+      label_smoothing: 0.1
+optim:
+  name: "adamw"
+  weight_decay: 0.05
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+scheduler:
+  name: "cosine"
+  is_iteration_based: true
+  max_iterations: 5
+  warmup_iterations: 20000
+  warmup_init_lr: 1.e-6
+  cosine:
+    max_lr: 0.002
+    min_lr: 1.e-6
+model:
+  classification:
+    name: "mobilevit_v2"
+    mitv2:
+      width_multiplier: 0.5
+      attn_norm_layer: "layer_norm_2d"
+    activation:
+      name: "swish"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "swish"
+  layer:
+    global_pool: "mean"
+    conv_init:  "kaiming_normal"
+    conv_init_std_dev: 0.02
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+ema:
+  enable: true
+  momentum: 0.0005
+stats:
+  val: [ "loss", "top1", "top5" ]
+  train: ["loss"]
+  checkpoint_metric: "top1"
+  checkpoint_metric_max: true

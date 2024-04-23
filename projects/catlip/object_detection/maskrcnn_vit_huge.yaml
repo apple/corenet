@@ -1,0 +1,147 @@
+# pytest: disable
+
+taskname: '+ ViT-H/16 Mask R-CNN'
+
+common:
+  run_label: "train"
+  accum_freq: 1
+  log_freq: 500
+  auto_resume: true
+  save_all_checkpoints: true
+  # We find mixed_precision results in training instability on 80 GB A100 GPUs. But, if you are
+  # using GPUs with less memory, please try enabling mixed_precision.
+  # mixed_precision: true
+
+dataset:
+  root_train: "/mnt/vision_datasets/coco"
+  root_val: "/mnt/vision_datasets/coco"
+  category: "detection"
+  # effective base batch size is 128 (8 nodes * 8 GPUs per node * 2 batch size per 8 A100 80 GB GPU)
+  train_batch_size0: 2
+  val_batch_size0: 4
+  workers: 8
+  persistent_workers: false
+  pin_memory: true
+  name: "coco_mask_rcnn"
+  collate_fn_name_train: "coco_mask_rcnn_collate_fn"
+  collate_fn_name_val: "coco_mask_rcnn_collate_fn"
+
+image_augmentation:
+  # for evaluation
+  resize:
+    enable: true
+    size: [1024, 1024]
+    interpolation: "bilinear"
+
+sampler:
+  name: variable_batch_sampler
+  num_repeats: 4
+  vbs:
+    check_scale: 32 # do not change it. Mask R-CNN transforms divides by 32
+    crop_size_height: 1024
+    crop_size_width: 1024
+    max_crop_size_height: 1280
+    max_crop_size_width: 1280
+    max_n_scales: 25
+    min_crop_size_height: 512
+    min_crop_size_width: 512
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "detection"
+      loss_weight: 1.0
+      detection:
+        name: "mask_rcnn_loss"
+        mask_rcnn_loss:
+          classifier_weight: 1
+          box_reg_weight: 1
+          mask_weight: 1
+          objectness_weight: 1
+          rpn_box_reg: 1
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 10 ]
+        curriculum_method: "cosine"
+
+optim:
+  name: "adamw"
+  no_decay_bn_filter_bias: true
+  weight_decay: 0.1
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+
+scheduler:
+  name: "multi_step"
+  max_epochs: 20
+  warmup_iterations: 250
+  warmup_init_lr: 0.00001
+  multi_step:
+    gamma: 0.1
+    lr: 0.0003
+    milestones: [17, 19]
+
+model:
+  activation_checkpointing: true
+  # During object detection training, we do not use classifier and cls_token, so we exclude them
+  # Also, "simple_fpn" is not part of the pre-trained image encoder, so we have to exclude that too.
+  resume_exclude_scopes: [ "classifier", "cls_token", "simple_fpn" ]
+  detection:
+    name: "mask_rcnn"
+    n_classes: 81
+    mask_rcnn:
+      norm_layer: "layer_norm_fp32"
+      backbone_lr_multiplier: 1.0
+  classification:
+    name: "vit"
+    # Initalize the model with a pre-trained model and finetune it.
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/catlip/pretrained_models/vit_huge.pt"
+    enable_layer_wise_lr_decay: true
+    layer_wise_lr_decay_rate: 0.9
+    n_classes: 24320
+    vit:
+      mode: "huge"
+      norm_layer: "layer_norm_fp32"
+      use_flash_attention: true
+      stochastic_dropout: 0.5
+      # disable cls token and enable simple FPN for detection tasks
+      no_cls_token: true
+      use_simple_fpn: true
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  activation:
+    name: "gelu"
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+
+ema:
+  enable: true
+  momentum: 0.0001
+
+stats:
+  val: [ "loss", "coco_map"]
+  train: ["loss"]
+  checkpoint_metric: "coco_map.bbox"
+  checkpoint_metric_max: true
+  coco_map:
+    iou_types: [ "bbox", "segm" ]
+
+
+# For evaluation on the validation set using 'corenet-eval-det', we follow the steps below:
+#  1. Determine and store the size of input image as metadata.
+#  2. Resize image to a fixed size.
+#  3. Make a prediction.
+#  4. Resize the predictions to the same size as original input image.
+#  5. Compute results.
+evaluation:
+  detection:
+    mode: "validation_set"
+    resize_input_images: true

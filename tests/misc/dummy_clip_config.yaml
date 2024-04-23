@@ -1,0 +1,42 @@
+# pytest: disable
+
+common:
+  debug_mode: true
+
+dataset:
+  name: "img_text_tar"
+  category: "multi_modal_image_text"
+
+model:
+  activation_checkpointing: true
+  freeze_modules: [
+    "image_encoder.transformer",
+    "image_encoder.cls_token",
+    "image_encoder.patch_emb",
+    "image_encoder.post_transformer_norm",
+    "image_encoder.pos_embed",
+  ]
+  multi_modal_image_text:
+    name: "clip"
+    clip:
+      projection_dim: 128
+  classification:
+    name: "vit"
+    vit:
+      mode: "tiny"
+      norm_layer: "layer_norm_fp32"
+  image_projection_head:
+    name: "simple_projection_nc2nc"
+  text:
+    name: "transformer"
+    vocab_size: 200
+    context_length: 77
+    transformer:
+      causal_masking: true
+      model_dim: 128
+      n_transformer_layers: 1
+      ffn_multiplier_per_layer: 4.0
+      n_heads_per_layer: 8
+      norm_layer: "layer_norm_fp32"
+  activation:
+    name: "gelu"

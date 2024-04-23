@@ -1,0 +1,116 @@
+taskname: '+ MobileViT-Small'
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+dataset:
+  root_train: "/mnt/imagenet/training" # Please update the location of training set
+  root_val: "/mnt/imagenet/validation" # Please update the location of validation set
+  name: "imagenet"
+  category: "classification"
+  train_batch_size0: 128 # In our experiments, we used an effective batch size of 1024 (128 images/GPU * 8 GPUs)
+  val_batch_size0: 100
+  eval_batch_size0: 100
+  workers: 8
+  persistent_workers: true
+  pin_memory: true
+  collate_fn_name_train: "image_classification_data_collate_fn"
+  collate_fn_name_val: "image_classification_data_collate_fn"
+  collate_fn_name_test: "image_classification_data_collate_fn"
+  
+image_augmentation:
+  # training related parameters
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  # validation related parameters
+  resize:
+    enable: true
+    size: 256 # shorter size is 256
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 256
+sampler:
+  name: "variable_batch_sampler"
+  vbs:
+    crop_size_width: 256
+    crop_size_height: 256
+    max_n_scales: 5
+    min_crop_size_width: 160
+    max_crop_size_width: 320
+    min_crop_size_height: 160
+    max_crop_size_height: 320
+    check_scale: 32
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "classification"
+      loss_weight: 1.0
+      classification:
+        name: "cross_entropy"
+        cross_entropy:
+          label_smoothing: 0.1
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 30 ]
+        curriculum_method: "cosine"
+optim:
+  name: "adamw"
+  no_decay_bn_filter_bias: false
+  weight_decay: 0.01
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+scheduler:
+  name: "cosine"
+  is_iteration_based: false
+  max_epochs: 300
+  warmup_iterations: 20000 # longer warm-up
+  warmup_init_lr: 0.0002
+  cosine:
+    max_lr: 0.002
+    min_lr: 0.0002
+model:
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    mode: distribution
+    noise: true
+  classification:
+    name: "mobilevit"
+    classifier_dropout: 0.1
+    n_classes: 1000
+    mit:
+      mode: "small"
+      ffn_dropout: 0.0
+      attn_dropout: 0.0
+      dropout: 0.1
+      number_heads: 4
+      no_fuse_local_global_features: false
+      conv_kernel_size: 3
+    activation:
+      name: "swish"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "swish"
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+ema:
+  enable: true
+  momentum: 0.0005
+stats:
+  val: [ "loss", "top1", "top5" ]
+  train: ["loss"]
+  checkpoint_metric: "top1.logits"
+  checkpoint_metric_max: true

@@ -1,0 +1,100 @@
+taskname: '+ MobileViTv2-2.0 SSD'
+common:
+  run_label: "train"
+  accum_freq: 1
+  accum_after_epoch: -1
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+dataset:
+  root_train: "/mnt/vision_datasets/coco"
+  root_val: "/mnt/vision_datasets/coco"
+  name: "coco_ssd"
+  category: "detection"
+  train_batch_size0: 32 # effective batch size is 128 (32 * 4 GPUs)
+  val_batch_size0: 32
+  workers: 8
+  persistent_workers: false
+  pin_memory: true
+  collate_fn_name_train: "coco_ssd_collate_fn"
+  collate_fn_name_val: "coco_ssd_collate_fn"
+
+image_augmentation:
+  resize:
+    enable: true
+    size: [320, 320]
+    interpolation: "bicubic"
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 320
+    crop_size_height: 320
+loss:
+  category: "detection"
+  detection:
+    name: "ssd_multibox_loss"
+    ssd_multibox_loss:
+      neg_pos_ratio: 3
+optim:
+  name: "adamw"
+  weight_decay: 0.05
+  no_decay_bn_filter_bias: false
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+scheduler:
+  name: "cosine"
+  is_iteration_based: false
+  max_epochs: 200
+  warmup_iterations: 500
+  warmup_init_lr: 0.00009
+  cosine:
+    max_lr: 0.0009
+    min_lr: 1.e-6
+anchor_generator:
+  name: "ssd"
+  ssd:
+    output_strides: [ 16, 32, 64, 128, 256, -1 ]
+    aspect_ratios: [ [ 2, 3 ], [ 2, 3 ], [ 2, 3 ], [ 2, 3 ], [ 2, 3 ], [2] ]
+    min_scale_ratio: 0.1
+    max_scale_ratio: 1.05
+matcher:
+  name: "ssd"
+  ssd:
+    center_variance: 0.1
+    size_variance: 0.2
+    iou_threshold: 0.5
+model:
+  detection:
+    name: "ssd"
+    n_classes: 81
+    ssd:
+      proj_channels: [512, 256, 256, 128, 128, 64]
+      nms_iou_threshold: 0.5
+  classification:
+    name: "mobilevit_v2"
+    n_classes: 1000
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/cvnets-v2/classification/mobilevitv2/imagenet1k/384x384/mobilevitv2-2.0.pt"
+    mitv2:
+      width_multiplier: 2.0
+      attn_norm_layer: "layer_norm_2d"
+    activation:
+      name: "swish"
+  normalization:
+    name: "sync_batch_norm"
+    momentum: 0.1
+  activation:
+    name: "relu"
+    inplace: false
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+ema:
+  enable: true
+  momentum: 0.0005
+stats:
+  val: [ "loss", "coco_map"]
+  train: ["loss"]
+  checkpoint_metric: "coco_map.bbox"
+  checkpoint_metric_max: true

@@ -1,0 +1,33 @@
+# pytest: disable
+
+dataset:
+  root_train: ""
+  disable_val: true
+  workers: 4
+  # dataset details
+  category: "language_modeling"
+  name: "mock_general_lm"
+  language_modeling:
+    sequence_length: 10
+    min_tokens_per_text: 0
+    min_characters_per_text: 0
+    shuffle_data: true
+    general_lm:
+      data_state_save_interval: 0
+      reader_chunk_size: 1
+      train_data_info: [
+        {
+          "file_name": ".corenet_data_cache/sample.jsonl",
+          "text_key": "text",
+          "file_id_range": [0, 1], 
+        },
+        {
+          "file_name": ".corenet_data_cache/sample.json.gz",
+          "text_key": "text",
+          "file_id_range": [0, 1], 
+        },
+      ]
+
+text_tokenizer:
+  name: "openai_clip"
+  pad_token: "pad"

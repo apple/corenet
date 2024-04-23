@@ -1,0 +1,47 @@
+# pytest: disable
+dataset:
+  category: "multi_modal_image_text"
+  multi_modal_img_text:
+    zero_shot_img_cls_dataset_name: "imagenet_sketch"
+    context_length: 77
+    img_text_tar:
+      metadata_file: "PATH_OF_METADATA_FILE"
+
+
+image_augmentation:
+  # training related parameters
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  auto_augment:
+    enable: true
+  cutmix:
+    alpha: 1.0
+    enable: true
+    p: 1.0
+  mixup:
+    alpha: 0.2
+    enable: true
+    p: 1.0
+  # validation related parameters
+  resize:
+    enable: true
+    size: 232
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 224
+
+sampler:
+  name: "variable_batch_sampler"
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    max_n_scales: 5
+    min_crop_size_width: 128
+    max_crop_size_width: 320
+    min_crop_size_height: 128
+    max_crop_size_height: 320
+    check_scale: 32

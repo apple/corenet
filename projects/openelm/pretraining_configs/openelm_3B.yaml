@@ -1,0 +1,116 @@
+# pytest: disable
+
+taskname: '+ [OpenELM-3B]'
+
+_anchor_context_length: &_anchor_context_length 2048
+# actual vocab size is 32001 after adding padding token, so we add few extra tokens to make it more hardware friendly
+# for classification layer in LM model
+_anchor_vocab_size: &_anchor_vocab_size 32128 
+_anchor_padding_index: &_anchor_padding_index 32000
+_anchor_forward_dtype: &_anchor_forward_dtype "bfloat16"
+_anchor_backward_dtype: &_anchor_backward_dtype "float32"
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  grad_clip: 1.0
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+  eval_every_k_iterations: 10000
+
+train_eval_pipeline:
+ name: "fsdp_train_eval_pipeline"
+
+fsdp:
+  sharding_strategy: "full_shard"
+  parameter_datatype: *_anchor_forward_dtype
+  gradient_reduction_datatype: *_anchor_backward_dtype
+  buffer_datatype: *_anchor_forward_dtype
+  cpu_offload: false
+  limit_all_gathers: true
+
+dataset:
+  root_train: ""
+  disable_val: true
+  # effective batch size is ~4M tokens (16 sequences x 8 H100 80 GB GPUs x 16 nodes x 2048 tokens per seq )
+  train_batch_size0: 16
+  workers: 4
+  persistent_workers: true
+  pin_memory: true
+  # dataset details
+  category: "language_modeling"
+  name: "general_lm"
+  language_modeling:
+    sequence_length: *_anchor_context_length
+    # filter text that have less than 256 tokens after tokenization to avoid excessive padding
+    min_tokens_per_text: 256
+    # filter text that have less than 200 characters before tokenization
+    min_characters_per_text: 200
+    shuffle_data: true
+    general_lm:
+      train_data_info: [
+        {
+        # Uncomment below line and add path to parquet, jsonl, and json.gz files from pre-training corpora.
+        # We expect the path to be of the form "/path/to/train-{file_id:05d}-05534.parquet
+          # "file_name": PATH_TO_PARQUET_FILES.
+          "text_key": "content",
+          "file_id_range": [0, 5535], 
+        },
+      ]
+
+text_tokenizer:
+  name: "sentence_piece"
+  sentence_piece:
+    enable_nfc_normalization: true
+    append_sot_token: true
+    append_eot_token: true
+    # Uncomment the below line and update the path of LLAMA SentencePiece model file
+    # model_path: <PATH_OF_LLAMA_SPM_MODEL>
+
+loss:
+  category: "language_modeling"
+  language_modeling:
+    name: "cross_entropy"
+    cross_entropy:
+      ignore_index: *_anchor_padding_index
+      use_z_loss: true
+
+optim:
+  name: "adamw"
+  weight_decay: 0.1
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.95
+    eps: 1.e-8
+
+scheduler:
+  is_iteration_based: true
+  # Train for about 1.4-1.5T tokens
+  max_iterations: 350000 
+  name: cosine
+  warmup_init_lr: 1.e-06
+  # warm-up for about 20B tokens (5000 * 4M tokens per iteration)
+  warmup_iterations: 5000
+  cosine:
+    max_lr: 0.0012
+    # papers use min_lr= 0.1 x max_lr
+    min_lr: 0.00012
+
+model:
+  activation_checkpointing: true
+  language_modeling:
+    name: "general_gpt"
+    general_gpt:
+      model_name: "OpenELM-3B"
+      vocab_size: *_anchor_vocab_size
+      max_context_length: *_anchor_context_length
+      padding_index: *_anchor_padding_index
+
+stats:
+  val: [ "loss"]
+  train: ["loss"]
+  checkpoint_metric: "loss.total_loss"
+  checkpoint_metric_max: false
+

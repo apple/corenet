@@ -1,0 +1,16 @@
+# pytest: disable
+dataset:
+    root_train: ""
+    category: language_modeling
+    name: commonsense_170k
+    language_modeling:
+        shuffle_data: false
+        sequence_length: 5
+        min_tokens_per_text: 0
+        min_characters_per_text: 0
+        commonsense_170k:
+          path: ""
+
+text_tokenizer:
+  name: "openai_clip"
+  pad_token: "pad"

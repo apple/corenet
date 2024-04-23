@@ -1,0 +1,46 @@
+# pytest: disable
+dataset:
+  root_train: "tests/data/datasets/classification/dummy_images/training"
+  root_val: "tests/data/datasets/classification/dummy_images/validation"
+  collate_fn_name_train: "image_classification_data_collate_fn"
+  collate_fn_name_val: "image_classification_data_collate_fn"
+  collate_fn_name_test: "image_classification_data_collate_fn"
+  name: "dummy"
+  category: "classification"
+  train_batch_size0: 2
+  val_batch_size0: 4
+  eval_batch_size0: 4
+  workers: 8
+  persistent_workers: true
+  pin_memory: true
+image_augmentation:
+  # training related parameters
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  auto_augment:
+    enable: true
+  cutmix:
+    alpha: 1.0
+    enable: true
+    p: 1.0
+  mixup:
+    alpha: 0.2
+    enable: true
+    p: 1.0
+  # validation related parameters
+  resize:
+    enable: true
+    size: 232
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 224
+
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 256
+    crop_size_height: 256

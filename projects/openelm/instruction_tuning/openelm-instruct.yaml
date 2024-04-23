@@ -1,0 +1,44 @@
+# pytest: disable
+# Model arguments
+model_name_or_path: OpenELM-500M
+torch_dtype: null
+use_flash_attention_2: false
+
+chat_template: "{% for message in messages %}\n{% if message['role'] == 'user' %}\n{{ '<|user|>\n' + message['content'] + eos_token }}\n{% elif message['role'] == 'system' %}\n{{ '<|system|>\n' + message['content'] + eos_token }}\n{% elif message['role'] == 'assistant' %}\n{{ '<|assistant|>\n'  + message['content'] + eos_token }}\n{% endif %}\n{% if loop.last and add_generation_prompt %}\n{{ '<|assistant|>' }}\n{% endif %}\n{% endfor %}"
+# Data training arguments
+# For definitions, see: src/h4/training/config.py
+dataset_mixer:
+  csarron/argilla-ultrafeedback-binarized-preferences-cleaned: 1.0
+dataset_splits:
+- train
+- test
+preprocessing_num_workers: 16
+
+# DPOTrainer arguments
+bf16: true
+beta: 0.01
+do_eval: true
+evaluation_strategy: steps
+eval_steps: 100
+gradient_accumulation_steps: 2
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: False
+hub_model_id: OpenELM-500M-dpo
+learning_rate: 5.0e-5
+log_level: info
+logging_steps: 10
+lr_scheduler_type: cosine
+max_length: 1024
+max_prompt_length: 512
+num_train_epochs: 3
+optim: adamw_torch
+output_dir: data/OpenELM-500M-dpo
+per_device_train_batch_size: 8
+per_device_eval_batch_size: 8
+push_to_hub: false
+save_strategy: "steps"
+save_steps: 100
+save_total_limit: 1
+seed: 42
+warmup_ratio: 0.1

@@ -1,0 +1,39 @@
+# pytest: disable
+
+taskname: '+ CatLIP ViT-B/16 [DataComp]'
+
+_anchor_vocab_size: &_anchor_vocab_size 10
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  mixed_precision_dtype: "bfloat16"
+  grad_clip: 1.0
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+
+dataset:
+  # root_train does not matter for img_text_tar dataset because dataset is information is expected
+  # to be contained in metadata file.
+  root_train: ""
+  disable_val: true
+  train_batch_size0: 2
+  workers: 0
+  persistent_workers: true
+  pin_memory: true
+  name: "wordnet_tagged_classification"
+  category: "classification"
+  wordnet_tagged_classification:
+    metadata_file: ".corenet_data_cache/metadata.pkl"
+    vocab_file: ".corenet_data_cache/vocab.pkl"
+    vocab_size: *_anchor_vocab_size
+
+image_augmentation:
+  # training related augmentations
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true

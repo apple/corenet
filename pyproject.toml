@@ -1,0 +1,11 @@
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+
+[tool.black]
+extend-exclude = '.history'
+
+[tool.pytest.ini_options]
+junit_family = 'xunit2'
+addopts = '--junit-xml=./build/test-results/junit_reports/junit.xml'
+markers = 'skip_ci: Mark a test to be skipped in CI to avoid known issues like download failure.'

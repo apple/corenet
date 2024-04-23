@@ -1,0 +1,163 @@
+# pytest: disable
+taskname: '+ CLIP-ViT-H/16'
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  # for larger models, we found bfloat16 leads to more stable training
+  mixed_precision_dtype: "bfloat16"
+  accum_freq: 1
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+
+dataset:
+  # root_train does not matter for img_text_tar dataset because dataset is information is expected
+  # to be contained in metadata file.
+  root_train: ""
+  root_val: "/mnt/vision_datasets/imagenet/validation"
+  # effective batch size is > 131k as we use multi-scale variable-batch sampler
+  # 131k = (64 nodes * 8 gpus per node * 256 batches per GPU; each GPU is A100 with 80 GB memory)
+  train_batch_size0: 256
+  val_batch_size0: 4
+  eval_batch_size0: 4
+  persistent_workers: false
+  pin_memory: true
+  workers: 16
+  collate_fn_name_train: "multi_modal_img_text_collate_fn"
+  collate_fn_name_val: "multi_modal_img_text_collate_fn"
+  collate_fn_name_test: "multi_modal_img_text_collate_fn"
+  name: "img_text_tar"
+  category: "multi_modal_image_text"
+  multi_modal_img_text:
+    zero_shot_img_cls_dataset_name: "imagenet"
+    context_length: 77
+    img_text_tar:
+      # ADD PATH OF METADATA FILE
+      metadata_file: "PATH_OF_METADATA_FILE"
+
+text_tokenizer:
+  name: "clip"
+  clip:
+    merges_path: "http://download.pytorch.org/models/text/clip_merges.bpe"
+    encoder_json_path: "http://download.pytorch.org/models/text/clip_encoder.json"
+
+image_augmentation:
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+    scale: [0.9, 1.0]
+  resize:
+    enable: true
+    size: 224
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 224
+
+sampler:
+  name: "variable_batch_sampler"
+  use_shards: true
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    max_n_scales: 5
+    min_crop_size_width: 160
+    max_crop_size_width: 320
+    min_crop_size_height: 160
+    max_crop_size_height: 320
+    check_scale: 32
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "multi_modal_image_text"
+      loss_weight: 1.0
+      multi_modal_image_text:
+        name: "contrastive_loss_clip"
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+
+optim:
+  name: "adamw"
+  weight_decay: 0.2
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.98
+    eps: 1.e-6
+
+scheduler:
+  name: "cosine"
+  is_iteration_based: true
+  max_iterations: 120000
+  warmup_iterations: 1000
+  warmup_init_lr: 1.e-6
+  cosine:
+    max_lr: 5.e-4
+    min_lr: 1.e-6
+
+model:
+  activation_checkpointing: true
+  multi_modal_image_text: # multi-modal image-text model
+    name: "clip"
+    lr_multiplier_img_encoder: 1.0
+    lr_multiplier_text_encoder: 1.0
+    clip:
+      projection_dim: 512
+  classification:
+    name: "vit"
+    vit:
+      mode: "huge"
+      norm_layer: "layer_norm_fp32"
+    activation:
+      name: "gelu"
+  image_projection_head:
+    name: "simple_projection_nc2nc"
+  text: # text encoder
+    name: "transformer"
+    vocab_size: 49408
+    context_length: 77
+    transformer:
+      causal_masking: true
+      model_dim: 768
+      no_scale_embedding: false
+      no_pos_embedding: false
+      embed_dropout: 0.0
+      dropout: 0.0
+      attn_dropout: 0.0
+      ffn_dropout: 0.0
+      n_transformer_layers: 12
+      ffn_multiplier_per_layer: 4.0
+      n_heads_per_layer: 12
+      norm_layer: "layer_norm_fp32"
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "gelu"
+    inplace: true
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_uniform"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+
+ema:
+  enable: true
+  momentum: 0.0005
+
+stats:
+  val: [ "top1" ]
+  train: ["loss", "grad_norm" ]
+  checkpoint_metric: "top1.zero_shot_image_logits"
+  checkpoint_metric_max: true

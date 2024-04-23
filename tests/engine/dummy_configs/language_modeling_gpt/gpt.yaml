@@ -1,0 +1,88 @@
+# pytest: disable
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  grad_clip: 1.0
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+  eval_every_k_iterations: 10000
+
+dataset:
+  root_train: ""
+  disable_val: true
+  train_batch_size0: 2
+  workers: 0
+  persistent_workers: true
+  pin_memory: true
+
+  # dataset details
+  category: "language_modeling"
+  name: "mock_general_lm"
+  language_modeling:
+    sequence_length: 10
+    min_tokens_per_text: 0
+    min_characters_per_text: 0
+    shuffle_data: true
+    general_lm:
+      data_state_save_interval: 0
+      reader_chunk_size: 1
+      # dummy dataset for CI/CD. These files are generated on-the-fly
+      # see tests/data/datasets/language_modeling/mock_general_lm.py
+      train_data_info: [
+        {
+          "file_name": ".corenet_data_cache/sample.jsonl",
+          "text_key": "text",
+          "file_id_range": [0, 1], 
+        },
+        {
+          "file_name": ".corenet_data_cache/sample.json.gz",
+          "text_key": "text",
+          "file_id_range": [0, 1], 
+        },
+      ]
+
+text_tokenizer:
+  name: "openai_clip"
+  pad_token: "pad"
+
+loss:
+  category: "language_modeling"
+  language_modeling:
+    name: "cross_entropy"
+    cross_entropy:
+      use_z_loss: true
+
+optim:
+  name: "adamw"
+  weight_decay: 0.1
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.95
+    eps: 1.e-8
+
+scheduler:
+  is_iteration_based: true
+  max_iterations: 5 
+  name: cosine
+  warmup_init_lr: 1.e-06
+  warmup_iterations: 5000
+  cosine:
+    max_lr: 0.0024
+    min_lr: 0.00024
+
+model:
+  language_modeling:
+    name: "general_gpt"
+    general_gpt:
+      model_name: "gpt-test"
+      vocab_size: 49408
+      max_context_length: 10
+
+stats:
+  val: [ "loss"]
+  train: ["loss"]
+  checkpoint_metric: "loss.total_loss"
+  checkpoint_metric_max: false

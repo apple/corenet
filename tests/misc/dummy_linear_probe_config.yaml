@@ -1,0 +1,37 @@
+# pytest: disable
+
+common:
+  debug_mode: true
+
+dataset:
+  name: "imagenet"
+  category: "classification"
+
+model:
+  resume_exclude_scopes:
+    - "image_encoder.neural_augmentor."
+    - "neural_augmentor."
+    - "text_encoder."
+    - "logit_scale"
+    - "image_encoder.classifier.proj"
+  ignore_missing_scopes: ["classifier."]
+  learn_augmentation:
+    mode: None
+  rename_scopes_map: [["image_encoder.", ""]]
+  freeze_modules: "^((?!classifier).)*$"
+  classification:
+    name: "vit"
+    vit:
+      mode: "base"
+      dropout: 0.2
+    activation:
+      name: "gelu"
+  activation:
+    name: "gelu"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  layer:
+    conv_init: "kaiming_normal"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02

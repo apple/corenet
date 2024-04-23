@@ -1,0 +1,16 @@
+# pytest: disable
+sampler:
+  name: "video_clip_batch_sampler"
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    check_scale: 32
+  vcbs:
+    num_frames_per_clip: 8
+    video_fps: 8
+    audio_fps: 16000
+    max_num_clips_per_batch: 2
+    num_clips_per_second_train: 2
+    num_clips_per_second_val: 2
+    num_samples_per_clip: 2
+    video_fps_num_scales: 2

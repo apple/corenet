@@ -1,0 +1,127 @@
+taskname: '+ DeepLabv3+ResNet-50'
+common:
+  run_label: "train"
+  accum_freq: 1
+  log_freq: 200
+  auto_resume: false
+  mixed_precision: true
+dataset:
+  root_train: "/mnt/vision_datasets/ADEChallengeData2016/"
+  root_val: "/mnt/vision_datasets/ADEChallengeData2016/"
+  name: "ade20k"
+  category: "segmentation"
+  train_batch_size0: 16 # effective batch size is 16 ( 16 * 1 GPUs)
+  val_batch_size0: 4
+  eval_batch_size0: 1
+  workers: 8
+  persistent_workers: true
+  pin_memory: true
+image_augmentation:
+  random_crop:
+    enable: true
+    seg_class_max_ratio: 0.75
+    pad_if_needed: true
+    mask_fill: 0 # background idx is 0
+  random_horizontal_flip:
+    enable: true
+  resize:
+    enable: true
+    size: [512, 512]
+    interpolation: "bicubic"
+  random_short_size_resize:
+    enable: true
+    interpolation: "bicubic"
+    short_side_min: 256
+    short_side_max: 768
+    max_img_dim: 1024
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 512
+    crop_size_height: 512
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "segmentation"
+      loss_weight: 1.0
+      segmentation:
+        name: "cross_entropy"
+        cross_entropy:
+          ignore_index: -1
+          aux_weight: 0.4
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+optim:
+  name: "sgd"
+  weight_decay: 1.e-4
+  no_decay_bn_filter_bias: true
+  sgd:
+    momentum: 0.9
+scheduler:
+  name: "cosine"
+  is_iteration_based: false
+  max_epochs: 50
+  cosine:
+    max_lr: 0.02
+    min_lr: 0.0001
+model:
+  segmentation:
+    name: "encoder_decoder"
+    n_classes: 150
+    lr_multiplier: 1
+    seg_head: "deeplabv3"
+    output_stride: 8
+    use_aux_head: true
+    activation:
+      name: "relu"
+    deeplabv3:
+      aspp_dropout: 0.1
+      aspp_sep_conv: false
+      aspp_out_channels: 512
+      aspp_rates: [ 12, 24, 36 ]
+  classification:
+    name: "resnet"
+    n_classes: 1000
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/cvnets-v2/examples/range_augment/classification/resnet_50.pt"
+    activation:
+      name: "relu"
+    resnet:
+      depth: 50
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "relu"
+    inplace: false
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+ema:
+  enable: true
+  momentum: 0.0001
+stats:
+  val: [ "loss", "iou" ]
+  train: [ "loss" ]
+  checkpoint_metric: "iou"
+  checkpoint_metric_max: true
+
+# During evaluation (with corenet-eval-seg), we follow following steps:
+#  1. Determine and store the size of input image as metadata
+#  2. Resize image while maintaining the aspect ratio
+#  3. Make a prediction
+#  4. Resize the predicted mask to the same size as original input image
+#  5. compute results
+evaluation:
+  segmentation:
+    resize_input_images: true
+    mode: "validation_set"

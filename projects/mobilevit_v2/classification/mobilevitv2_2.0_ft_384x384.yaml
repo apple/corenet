@@ -1,0 +1,82 @@
+taskname: '+ MobileViTv2-2.0 384x384'
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  channels_last: true
+  tensorboard_logging: false
+  grad_clip: 10.0
+dataset:
+  root_train: "/mnt/imagenet/training"
+  root_val: "/mnt/imagenet/validation"
+  name: "imagenet"
+  category: "classification"
+  train_batch_size0: 64 # effective batch size of 128 (64 x 2 GPUs)
+  val_batch_size0: 50
+  eval_batch_size0: 50
+  workers: 8
+  persistent_workers: false
+  pin_memory: true
+  collate_fn_name_train: "image_classification_data_collate_fn"
+  collate_fn_name_val: "image_classification_data_collate_fn"
+  collate_fn_name_test: "image_classification_data_collate_fn"
+
+image_augmentation:
+  random_resized_crop:
+    enable: true
+    interpolation: "bicubic"
+  random_horizontal_flip:
+    enable: true
+  resize:
+    enable: true
+    size: 384 # shorter size is 384
+    interpolation: "bicubic"
+  center_crop:
+    enable: true
+    size: 384
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 384
+    crop_size_height: 384
+loss:
+  category: "classification"
+  classification:
+    name: "cross_entropy"
+    cross_entropy:
+      label_smoothing: 0.1
+optim:
+  name: "sgd"
+  weight_decay: 4.e-5
+  no_decay_bn_filter_bias: true
+  sgd:
+    momentum: 0.9
+scheduler:
+  name: "fixed"
+  max_epochs: 10
+  fixed:
+    lr: 1.e-3
+model:
+  classification:
+    name: "mobilevit_v2"
+    n_classes: 1000
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/cvnets-v2/classification/mobilevitv2/imagenet1k/256x256/mobilevitv2-2.0.pt"
+    mitv2:
+      width_multiplier: 2.0
+      attn_norm_layer: "layer_norm_2d"
+    activation:
+      name: "swish"
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "swish"
+ema:
+  enable: true
+  momentum: 0.00005
+stats:
+  val: [ "loss", "top1", "top5" ]
+  train: ["loss"]
+  checkpoint_metric: "top1"
+  checkpoint_metric_max: true

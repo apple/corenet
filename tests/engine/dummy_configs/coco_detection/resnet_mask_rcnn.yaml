@@ -1,0 +1,98 @@
+taskname: '+ ResNet-50 Mask RCNN'
+common:
+  run_label: "train"
+  accum_freq: 1
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+dataset:
+  root_train: "tests/data/coco"
+  root_val: "tests/data/coco"
+  category: "detection"
+  train_batch_size0: 1 # effective base batch size is 64 (2 * 8 GPUs * 4 nodes)
+  val_batch_size0: 1
+  eval_batch_size0: 1
+  workers: 0
+  persistent_workers: false
+  pin_memory: true
+  name: "mock_coco_mask_rcnn"
+  collate_fn_name_train: "coco_mask_rcnn_collate_fn"
+  collate_fn_name_val: "coco_mask_rcnn_collate_fn"
+  collate_fn_name_test: "coco_mask_rcnn_collate_fn"
+
+image_augmentation:
+  # for evaluation
+  resize:
+    enable: true
+    size: [256, 256]
+    interpolation: "bilinear"
+sampler:
+  name: variable_batch_sampler
+  vbs:
+    check_scale: 32
+    crop_size_height: 256
+    crop_size_width: 256
+    max_crop_size_height: 384
+    max_crop_size_width: 384
+    max_n_scales: 10
+    min_crop_size_height: 128
+    min_crop_size_width: 128
+loss:
+  category: "detection"
+  detection:
+    name: "mask_rcnn_loss"
+    mask_rcnn_loss:
+      classifier_weight: 1
+      box_reg_weight: 1
+      mask_weight: 1
+      objectness_weight: 1
+      rpn_box_reg: 1
+optim:
+  name: "sgd"
+  weight_decay: 4.e-5
+  no_decay_bn_filter_bias: true
+  sgd:
+    momentum: 0.9
+scheduler:
+  name: "multi_step"
+  max_epochs: 2
+  warmup_iterations: 500
+  warmup_init_lr: 0.001
+  multi_step:
+    gamma: 0.1
+    lr: 0.1
+    milestones: [60, 84]
+model:
+  detection:
+    name: "mask_rcnn"
+    n_classes: 81
+    mask_rcnn:
+      backbone_lr_multiplier: 0.1
+      norm_layer: "batch_norm"
+      disable_fpn: false
+  classification:
+    name: "resnet"
+    activation:
+      name: "relu"
+    resnet:
+      depth: 50
+  normalization:
+    name: "batch_norm"
+    momentum: 0.1
+  activation:
+    name: "relu"
+    inplace: false
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+ema:
+  enable: true
+  momentum: 0.0005
+stats:
+  val: [ "loss", "coco_map"]
+  train: ["loss"]
+  checkpoint_metric: "coco_map.bbox"
+  checkpoint_metric_max: true
+  coco_map:
+    iou_types: [ "bbox", "segm" ]

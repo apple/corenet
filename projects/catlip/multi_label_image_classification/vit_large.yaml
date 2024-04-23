@@ -1,0 +1,126 @@
+# pytest: disable
+
+taskname: '+ ViT-L/16 [COCO-CLS]'
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  mixed_precision_dtype: "bfloat16"
+  grad_clip: 1.0
+  save_all_checkpoints: true
+
+dataset:
+  root_train: "/mnt/vision_datasets/coco"
+  root_val: "/mnt/vision_datasets/coco"
+  # effective batch size is 128 (32 * 4 A100 80 GB GPU)
+  train_batch_size0: 32
+  val_batch_size0: 32
+  eval_batch_size0: 32
+  workers: -1 # use all CPUs
+  persistent_workers: true
+  pin_memory: true
+  name: "coco"
+  category: "classification"
+
+image_augmentation:
+  # training related augmentations
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  # evaluation related augmentations
+  resize:
+    enable: true
+    size: 512
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 512
+
+sampler:
+  name: "variable_batch_sampler"
+  vbs:
+    crop_size_width: 512
+    crop_size_height: 512
+    max_n_scales: 25
+    min_crop_size_width: 256
+    max_crop_size_width: 768
+    min_crop_size_height: 256
+    max_crop_size_height: 768
+    check_scale: 16
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "classification"
+      loss_weight: 1.0
+      classification:
+        name: "binary_cross_entropy"
+        binary_cross_entropy:
+          reduction: "batch_mean"
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+
+optim:
+  name: "adamw"
+  weight_decay: 0.05
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+
+scheduler:
+  name: "cosine"
+  max_epochs: 10
+  warmup_iterations: 500
+  warmup_init_lr: 1.e-6
+  cosine:
+    max_lr: 0.00001
+    min_lr: 0.000001
+
+model:
+  activation_checkpointing: true
+  # The number of classes in pre-trained model are 24320 while COCO has 80 classes.
+  # so, we exclude the classifier while loading the pre-trained weights.
+  resume_exclude_scopes: [ "classifier" ]
+  classification:
+    name: "vit"
+    n_classes: 80
+    pretrained: https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/catlip/pretrained_models/vit_large.pt
+    vit:
+      mode: "large"
+      norm_layer: "layer_norm_fp32"
+      use_flash_attention: true
+  # use rangeaugment
+  learn_augmentation: 
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  activation:
+    name: "gelu"
+  layer:
+    conv_init: "kaiming_normal"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+  
+ema:
+  enable: true
+  momentum: 0.0005
+
+stats:
+  train: [ "loss" ]
+  val: [ "loss" , "multiclass_classification_pr(pred=logits)"]
+  checkpoint_metric: "multiclass_classification_pr(pred=logits).macro"
+  checkpoint_metric_max: true
+  metrics:
+    multiclass_classification_pr:
+      suppress_warnings: true
+

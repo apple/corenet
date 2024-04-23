@@ -1,0 +1,8 @@
+# pytest: disable
+sampler:
+  name: "batch_sampler"
+  num_repeats: 1
+  truncated_repeat_aug_sampler: false
+  bs:
+    crop_size_width: 224
+    crop_size_height: 224

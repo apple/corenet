@@ -1,0 +1,99 @@
+taskname: '+ ResNet-50 SSD'
+common:
+  run_label: "train"
+  accum_freq: 1
+  accum_after_epoch: -1
+  log_freq: 100
+  auto_resume: true
+  mixed_precision: true
+dataset:
+  root_train: "/mnt/vision_datasets/coco"
+  root_val: "/mnt/vision_datasets/coco"
+  category: "detection"
+  train_batch_size0: 16 # effective batch size is 64 (16 * 4 GPUs)
+  val_batch_size0: 16
+  workers: 8
+  persistent_workers: false
+  pin_memory: true
+  name: "coco_ssd"
+  collate_fn_name_train: "coco_ssd_collate_fn"
+  collate_fn_name_val: "coco_ssd_collate_fn"
+
+image_augmentation:
+  resize:
+    enable: true
+    size: [384, 384]
+    interpolation: "bicubic"
+sampler:
+  name: "batch_sampler"
+  bs:
+    crop_size_width: 384
+    crop_size_height: 384
+loss:
+  category: "detection"
+  detection:
+    name: "ssd_multibox_loss"
+    ssd_multibox_loss:
+      neg_pos_ratio: 3
+optim:
+  name: "sgd"
+  weight_decay: 5.e-4
+  no_decay_bn_filter_bias: true
+  sgd:
+    momentum: 0.9
+    nesterov: true
+scheduler:
+  name: "cosine"
+  is_iteration_based: false
+  max_epochs: 200
+  warmup_iterations: 1800 # 5 epochs
+  warmup_init_lr: 1.e-6
+  cosine:
+    max_lr: 0.0052
+    min_lr: 0.00005
+anchor_generator:
+  name: "ssd"
+  ssd:
+    output_strides: [16, 32, 64, 128]
+    aspect_ratios: [ [2, 3], [2, 3], [2, 3], [2, 3]]
+    min_scale_ratio: 0.1
+    max_scale_ratio: 1.05
+matcher:
+  name: "ssd"
+  ssd:
+    center_variance: 0.1
+    size_variance: 0.2
+    iou_threshold: 0.5
+model:
+  detection:
+    name: "ssd"
+    n_classes: 81
+    ssd:
+      proj_channels: [512, 1024, 512, 256]
+      nms_iou_threshold: 0.5
+  classification:
+    name: "resnet"
+    n_classes: 1000
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/cvnets-v2/classification/advanced/resnet-50-adv.pt"
+    activation:
+      name: "relu"
+    resnet:
+      depth: 50
+  normalization:
+    name: "sync_batch_norm"
+    momentum: 0.1
+  activation:
+    name: "relu"
+    inplace: false
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_normal"
+    linear_init: "normal"
+ema:
+  enable: true
+  momentum: 0.0001
+stats:
+  val: [ "loss", "coco_map"]
+  train: ["loss"]
+  checkpoint_metric: "coco_map.bbox"
+  checkpoint_metric_max: true

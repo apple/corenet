@@ -1,0 +1,125 @@
+# pytest: disable
+
+taskname: '+ ViT-H/16 [FT-Places365]'
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  mixed_precision_dtype: "bfloat16"
+  grad_clip: 1.0
+  save_all_checkpoints: true
+
+dataset:
+  root_train: "/mnt/vision_datasets/places365/training"
+  root_val: "/mnt/vision_datasets/places365/validation"
+  # effective batch size is 512 (128 * 4 A100 80 GB GPU)
+  train_batch_size0: 128
+  val_batch_size0: 100
+  eval_batch_size0: 100
+  workers: -1 # use all CPUs
+  persistent_workers: true
+  pin_memory: true
+  name: "places365"
+  category: "classification"
+
+image_augmentation:
+  # training related augmentation
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+  random_horizontal_flip:
+    enable: true
+  # validation related augmentation
+  resize:
+    enable: true
+    size: 232
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 224
+
+sampler:
+  name: "variable_batch_sampler"
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    max_n_scales: 25
+    min_crop_size_width: 128
+    max_crop_size_width: 320
+    min_crop_size_height: 128
+    max_crop_size_height: 320
+    check_scale: 32
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "classification"
+      loss_weight: 1.0
+      classification:
+        name: "cross_entropy"
+        cross_entropy:
+          label_smoothing: 0.1
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+
+optim:
+  name: "adamw"
+  weight_decay: 0.05
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.999
+
+scheduler:
+  name: "cosine"
+  max_epochs: 10
+  warmup_iterations: 500
+  warmup_init_lr: 1.e-6
+  cosine:
+    max_lr: 0.00003
+    min_lr: 0.000003
+
+model:
+  activation_checkpointing: true
+  # during finetuning, we need to skip loading the classifier from a pre-trained model
+  # because the number of classes in down-stream task and pre-training are different.
+  resume_exclude_scopes: [ "classifier" ]
+  classification:
+    name: "vit"
+    n_classes: 365
+    # Initalize the model with a pre-trained model and finetune it.
+    # Note that during evaluation, we need to set 'resume_exclude_scopes' to an empty string
+    # and replace the 'pretrained' with the fine-tuned model path.
+    pretrained: "https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/catlip/pretrained_models/vit_huge.pt"
+    vit:
+      mode: "huge"
+      norm_layer: "layer_norm_fp32"
+      use_flash_attention: true
+  # use rangeaugment
+  learn_augmentation: 
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  activation:
+    name: "gelu"
+  layer:
+    conv_init: "kaiming_normal"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+  
+ema:
+  enable: true
+  momentum: 0.0005
+
+stats:
+  train: ["loss"]
+  val: [ "loss", "top1", "top5" ]
+  checkpoint_metric: "top1.logits"
+  checkpoint_metric_max: true

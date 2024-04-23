@@ -1,0 +1,154 @@
+# pytest: disable
+
+taskname: '+ CLIP-ViT-B/16'
+
+_anchor_context_length: &_anchor_context_length 77
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  mixed_precision: true
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+
+dataset:
+  # root_train does not matter for img_text_tar dataset because dataset is information is expected
+  # to be contained in metadata file.
+  root_train: ""
+  root_val: "/mnt/vision_datasets/imagenet/validation"
+  name: "img_text_tar"
+  # effective batch size is > 65536 as we use multi-scale variable-batch sampler
+  # 65k = (32 nodes * 8 gpus per node * 256 batches per GPU; each GPU is A100 with 40 GB memory)
+  train_batch_size0: 256
+  val_batch_size0: 4
+  eval_batch_size0: 4
+  persistent_workers: true
+  pin_memory: true
+  # use all CPUs as workers
+  workers: -1
+  collate_fn_name_train: "multi_modal_img_text_collate_fn"
+  collate_fn_name_val: "multi_modal_img_text_collate_fn"
+  collate_fn_name_test: "multi_modal_img_text_collate_fn"
+  name: "img_text_tar"
+  category: "multi_modal_image_text"
+  multi_modal_img_text:
+    zero_shot_img_cls_dataset_name: "imagenet"
+    context_length: *_anchor_context_length
+    img_text_tar:
+      # Uncomment below line to add metadata file's path.
+      # metadata_file: "PATH_OF_METADATA_FILE"
+
+text_tokenizer:
+  name: "openai_clip"
+
+image_augmentation:
+  random_resized_crop:
+    enable: true
+    interpolation: "bilinear"
+    scale: [0.9, 1.0]
+  resize:
+    enable: true
+    size: 224 # shorter size is 224
+    interpolation: "bilinear"
+  center_crop:
+    enable: true
+    size: 224
+
+sampler:
+  name: "variable_batch_sampler"
+  use_shards: true
+  start_shuffling_from_epoch: 1
+  vbs:
+    crop_size_width: 224
+    crop_size_height: 224
+    max_n_scales: 5
+    min_crop_size_width: 160
+    max_crop_size_width: 320
+    min_crop_size_height: 160
+    max_crop_size_height: 320
+    check_scale: 32
+
+loss:
+  category: "composite_loss"
+  composite_loss:
+    - loss_category: "multi_modal_image_text"
+      loss_weight: 1.0
+      multi_modal_image_text:
+        name: "contrastive_loss_clip"
+    - loss_category: "neural_augmentation"
+      loss_weight: 1.0
+      neural_augmentation:
+        perceptual_metric: "psnr"
+        target_value: [ 40, 20 ]
+        curriculum_method: "cosine"
+
+optim:
+  name: "adamw"
+  weight_decay: 0.2
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.98
+    eps: 1.e-6
+
+scheduler:
+  is_iteration_based: true
+  max_iterations: 200000
+  name: cosine
+  warmup_init_lr: 1.e-06
+  warmup_iterations: 10000
+  cosine:
+    max_lr: 0.001
+    min_lr: 1.e-06
+
+model:
+  activation_checkpointing: true
+  multi_modal_image_text:
+    name: "clip"
+    lr_multiplier_img_encoder: 1.0
+    lr_multiplier_text_encoder: 1.0
+    clip:
+      projection_dim: 512
+  classification:
+    name: "vit"
+    vit:
+      mode: "base"
+      norm_layer: "layer_norm_fp32"
+  image_projection_head:
+    name: "simple_projection_nc2nc"
+  text:
+    name: "transformer"
+    vocab_size: 49408
+    context_length: *_anchor_context_length
+    transformer:
+      causal_masking: true
+      model_dim: 512
+      n_transformer_layers: 12
+      ffn_multiplier_per_layer: 4.0
+      n_heads_per_layer: 8
+      norm_layer: "layer_norm_fp32"
+  # Use RangeAugment: https://arxiv.org/abs/2212.10553
+  learn_augmentation:
+    brightness: true
+    contrast: true
+    noise: true
+    mode: "distribution"
+  activation:
+    name: "gelu"
+    inplace: true
+  layer:
+    global_pool: "mean"
+    conv_init: "kaiming_uniform"
+    linear_init: "trunc_normal"
+    linear_init_std_dev: 0.02
+
+ema:
+  enable: true
+  momentum: 0.0005
+
+stats:
+  val: [ "top1" ]
+  train: ["loss", "grad_norm" ]
+  checkpoint_metric: "top1.zero_shot_image_logits"
+  checkpoint_metric_max: true

@@ -1,5 +1,7 @@
 # OpenELM: An Efficient Language Model Family with Open-source Training and Inference Framework
 
+[![arXiv](https://img.shields.io/badge/arXiv-2404.14619-a6dba0.svg)](https://arxiv.org/abs/2404.14619)
+
 We provide pretraining, evaluation, instruction tuning, and parameter-efficient finetuning instructions along with pretrained models and checkpoints:
 
 1. [Pre-training](./README-pretraining.md)
@@ -22,13 +24,13 @@ The release of OpenELM models aims to empower and enrich the open research commu
 If you find our work useful, please cite:
 
 ```BibTex 
-# TODO: update OpenELM bibtex
 @article{mehta2024openelm,
   title={OpenELM: An Efficient Language Model Family with Open-source Training and Inference Framework},
   author = {Sachin Mehta and Mohammad Hossein Sekhavat and Qingqing Cao and Maxwell Horton and Yanzi Jin and Chenfan Sun and Iman Mirzadeh and Mahyar Najibi and Dmitry Belenko and Peter Zatloukal and Mohammad Rastegari},
   year={2024},
-  journal={},
-  url={},
+  eprint={2404.14619},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL}
 }
 
 @inproceedings{mehta2022cvnets, 

@@ -429,7 +429,7 @@ def get_transfer_client(
     elif raise_error_if_transfer_client_not_present:
         raise RuntimeError(
             f"Requested transfer client, i.e. {transfer_client_name}, is not available. \
-                Availble clients are {list(TRANSFER_CLIENT_REGISTRY.keys())}"
+                Available clients are {list(TRANSFER_CLIENT_REGISTRY.keys())}"
         )
     else:
         return None

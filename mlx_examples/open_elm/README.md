@@ -10,21 +10,18 @@ be installed. We assume that the main requirements.txt is already installed.
 
 ## Downloading pre-converted checkpoints
 
-The pre-converted checkpoints are available at the following URLs. To download
-these directories, use `s3 sync` command in `awscli`.
+The pre-converted checkpoints are available at the following URLs.
 
-- 270M
-    - Float16: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/270M>
-    - 4 bit: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/270M-4bit>
-- 450M: 
-    - Float16: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/450M>
-    - 4 bit:<https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/450M-4bit>
-- 1.1B: 
-    - Float16: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/1.1B>
-    - 4 bit: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/1.1B-4bit>
-- 3B: 
-    - BFloat16: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/3B>
-    - 4 bit: <https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/3B-4bit>
+| Model | Weights | Config |
+| ---- | ---- | ---- |
+| 270M | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/270M/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/270M/config.json) |
+| 270M - 4bit | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/270M-4bit/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/270M-4bit/config.json) |
+| 450M | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/450M/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/450M/config.json) |
+| 450M - 4bit | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/450M-4bit/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/450M-4bit/config.json) |
+| 1.1B | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/1.1B/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/1.1B/config.json) |
+| 1.1B - 4bit | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/1.1B-4bit/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/1.1B-4bit/config.json) |
+| 3B | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/3B/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/3B/config.json) |
+| 3B - 4bit | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/3B-4bit/weights.safetensors) | [Link](https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/mlx/3B-4bit/config.json) |
 
  Note that these checkpoints do not contain a tokenizer model file, which is
  required for inference with `inference.py`. Simply place Meta LLaMA2's

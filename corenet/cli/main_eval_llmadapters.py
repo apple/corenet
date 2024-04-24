@@ -169,12 +169,12 @@ class _CorenetToHFPretrainedModel(PreTrainedModel):
         assert not output_hidden_states
         assert return_dict is None or return_dict
 
-        model_outpus = self.model(input_ids)
-        if isinstance(model_outpus, dict):
-            logits = model_outpus["logits"]
-            past_key_values = model_outpus["past_key_values"]
-        elif isinstance(model_outpus, torch.Tensor):
-            logits = model_outpus
+        model_outputs = self.model(input_ids)
+        if isinstance(model_outputs, dict):
+            logits = model_outputs["logits"]
+            past_key_values = model_outputs["past_key_values"]
+        elif isinstance(model_outputs, torch.Tensor):
+            logits = model_outputs
             past_key_values = None
 
         # We may have added extra tokens in the LM classifier to make training faster. Remove such tokens

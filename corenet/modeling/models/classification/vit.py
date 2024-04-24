@@ -613,7 +613,7 @@ class VisionTransformer(BaseImageEncoder):
                 "--model.classification.vit.use-flash-attention",
                 action="store_true",
                 default=False,
-                help="Use Transformer layers with flash attention for efficiently computing scaled dot-product attention. Defauls to False.",
+                help="Use Transformer layers with flash attention for efficiently computing scaled dot-product attention. Defaults to False.",
             )
 
         return parser

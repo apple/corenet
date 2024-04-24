@@ -569,7 +569,7 @@ class RandomResizedCrop(BaseTransformation):
 class RandomShortSizeResizeCrop(BaseTransformation):
     """
     This class first randomly resizes the input video such that shortest side is between
-    specified minimum and maximum values, adn then crops a desired size video.
+    specified minimum and maximum values, and then crops a desired size video.
 
     .. note::
         This class assumes that the video size after resizing is greater than or equal

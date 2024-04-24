@@ -744,7 +744,7 @@ class VisionTransformer(BaseImageEncoder):
     def forward(
         self, x: Tensor, return_image_embeddings: bool = False
     ) -> Union[Tensor, Dict[str, Tensor]]:
-        """Forward fucntion for ViT.
+        """Forward function for ViT.
 
         Args:
             x: Input image tensor of shape [Batch, 3, Height, Width].
@@ -845,7 +845,7 @@ class VisionTransformer(BaseImageEncoder):
     ) -> Optional[Callable[[torch.nn.Module, bool, int], bool]]:
         """Returns the FSDP wrapping policy.
 
-        For ViT, we use the Transfomer's wrapping policy.
+        For ViT, we use the Transformer's wrapping policy.
         """
         vit_auto_wrap_policy = functools.partial(
             transformer_auto_wrap_policy,

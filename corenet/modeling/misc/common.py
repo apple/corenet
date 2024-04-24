@@ -244,7 +244,7 @@ def freeze_modules_based_on_opts(
     verbose = verbose and is_master(opts)
 
     if freeze_patterns:
-        # TODO: allow applying on all modules, not just immediate chidren? How?
+        # TODO: allow applying on all modules, not just immediate children? How?
         for name, module in model.named_children():
             if any([re.match(p, name) for p in freeze_patterns]):
                 freeze_module(module)

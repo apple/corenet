@@ -78,7 +78,7 @@ def check_valid_noun_synset(synset: Synset, word: str) -> bool:
         word: Input word.
 
     Returns:
-        A boolen indicating if input synset and word are the same or not.
+        A boolean indicating if input synset and word are the same or not.
     """
     return synset.name() == f"{word}.n.01"
 

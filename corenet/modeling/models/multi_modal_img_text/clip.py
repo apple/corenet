@@ -66,7 +66,7 @@ class CLIP(BaseMultiModalImageText):
         return parser
 
     def reset_parameters(self) -> None:
-        """Helper fucntion to reset model weights.
+        """Helper function to reset model weights.
 
         Currently, we only reset the @logit_scale.
         """

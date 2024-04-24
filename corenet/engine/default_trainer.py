@@ -612,7 +612,7 @@ class DefaultTrainer(object):
                 raise e
         except Exception as e:
             if "out of memory" in str(e):
-                logger.log("OOM exception occured")
+                logger.log("OOM exception occurred")
                 n_gpus = getattr(self.opts, "dev.num_gpus", 1)
                 for dev_id in range(n_gpus):
                     mem_summary = torch.cuda.memory_summary(

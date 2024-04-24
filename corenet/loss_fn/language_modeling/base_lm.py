@@ -13,7 +13,7 @@ from corenet.utils import logger
 
 
 @LOSS_REGISTRY.register(name="__base__", type="language_modeling")
-class BaseLangugeModelingCriteria(BaseCriteria):
+class BaseLanguageModelingCriteria(BaseCriteria):
     """Base class for defining loss functions for the task of language modeling.
 
     Args:
@@ -26,7 +26,7 @@ class BaseLangugeModelingCriteria(BaseCriteria):
     @classmethod
     def add_arguments(cls, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Add language modeling specific arguments to the parser."""
-        if cls is BaseLangugeModelingCriteria:
+        if cls is BaseLanguageModelingCriteria:
             group = parser.add_argument_group(cls.__name__)
             group.add_argument(
                 "--loss.language-modeling.name",

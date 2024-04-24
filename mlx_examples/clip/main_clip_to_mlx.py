@@ -179,7 +179,7 @@ def ascontiguousarray(mx_array: mx.array) -> mx.array:
     """Convert a mx array to a contiguous mx array"""
     # save_safetensors requires row_contiguous array (mlx==0.8.1), while mlx does
     # not provide the API to do that, which we could only convert to numpy and and
-    # copy back to mlx to acheive this.
+    # copy back to mlx to achieve this.
     # This is expensive, but currently there are no way around it.
     # TODO(Frank): revisit to see if newer version of mlx will have
     # `ascontiguousarray` exposed.

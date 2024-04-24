@@ -8,7 +8,7 @@ Test that MLX output match with CoreNet's output.
 The test requires a conversion using `main_clip_to_mlx.py` script to
 dump the converted model to `results/mlx_model/` directory
 
-Example invokation:
+Example invocation:
 
 python main_test_clip_mlx.py \
     --common.config-file "../../projects/range_augment/clip/clip_vit_base.yaml" \

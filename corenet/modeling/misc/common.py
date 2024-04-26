@@ -216,7 +216,6 @@ def _module_bfs(module:torch.nn.Module, p: list[str], idx=1) -> None:
             
             while stack:
                 idx, module = stack.popleft()
-                
                 for submodule_name, submodule in module.named_children():
                     if idx<len(p) and re.match(p[idx], submodule_name):
                         stack.append((idx+1, submodule))
@@ -228,14 +227,15 @@ def freeze_modules_based_on_opts(
     opts: argparse.Namespace, model: torch.nn.Module, verbose: bool = True
 ) -> torch.nn.Module:
     """
-    Allows for freezing immediate modules and parameters of the model using --model.freeze-modules.
+    Allows for freezing immediate modules and parameters as well as nested modules of the model using --model.freeze-modules.
 
-    --model.freeze-modules should be a list of strings or a comma-separated list of regex expressions.
+    --model.freeze-modules should be a list of strings, a comma-separated list of regex expressions or list of strings with '>' between modules to freeze particular nested layers inside immediate module of the model.
 
     Examples of --model.freeze-modules:
         "conv.*"  # see example below: can freeze all (top-level) conv layers
         "^((?!classifier).)*$"   # freezes everything except for "classifier": useful for linear probing
         "conv1,layer1,layer2,layer3"  # freeze all layers up to layer3
+        "transformer>decoder"  # freeze decoder block inside transformer
 
     >>> model = nn.Sequential(OrderedDict([
           ('conv1', nn.Conv2d(1, 20, 5)),

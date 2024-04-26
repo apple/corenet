@@ -6,6 +6,7 @@
 import argparse
 import os
 import re
+from collections import deque
 from types import MethodType
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -209,6 +210,19 @@ def freeze_module(module: torch.nn.Module, force_eval: bool = True) -> torch.nn.
 
     return module
 
+def _module_bfs(module:torch.nn.Module, p: list[str], idx=1) -> None:
+            stack = deque()
+            stack.append((idx, module))
+            
+            while stack:
+                idx, module = stack.popleft()
+                
+                for submodule_name, submodule in module.named_children():
+                    if idx<len(p) and re.match(p[idx], submodule_name):
+                        stack.append((idx+1, submodule))
+                        if idx == len(p)-1:
+                            freeze_module(submodule)
+                            logger.info("Freezing module: {} Inside: {}".format(submodule_name,'>'.join(p)))
 
 def freeze_modules_based_on_opts(
     opts: argparse.Namespace, model: torch.nn.Module, verbose: bool = True
@@ -249,13 +263,15 @@ def freeze_modules_based_on_opts(
         # separate nested expressions from the rest
         for p in freeze_patterns:
             if ">" in p:
-                nested_modules_patterns.append(p.split(">"))
+                nested_modules_patterns.append([part for part in re.split(r'\s*>\s*', p) if part.strip()])
             else:
                 immediate_children_patterns.append(p)
-
         
-
         for name, module in model.named_children():
+            for p in nested_modules_patterns:
+                if re.match(p[0], name):
+                    _module_bfs(module, p, 1)        
+                    
             if any([re.match(p, name) for p in immediate_children_patterns]):
                 freeze_module(module)
                 if verbose:

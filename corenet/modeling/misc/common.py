@@ -221,7 +221,7 @@ def _module_bfs(module:torch.nn.Module, p: list[str], idx=1) -> None:
                         stack.append((idx+1, submodule))
                         if idx == len(p)-1:
                             freeze_module(submodule)
-                            logger.info("Freezing module: {} Inside: {}".format(submodule_name,'>'.join(p)))
+                            logger.info("Freezing module: {} Inside: {}".format(submodule_name,'>'.join(p[:-1])))
 
 def freeze_modules_based_on_opts(
     opts: argparse.Namespace, model: torch.nn.Module, verbose: bool = True

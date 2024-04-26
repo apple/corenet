@@ -216,12 +216,15 @@ def _module_bfs(module:torch.nn.Module, p: list[str], idx=1) -> None:
             
             while stack:
                 idx, module = stack.popleft()
-                for submodule_name, submodule in module.named_children():
-                    if idx<len(p) and re.match(p[idx], submodule_name):
-                        stack.append((idx+1, submodule))
-                        if idx == len(p)-1:
-                            freeze_module(submodule)
-                            logger.info("Freezing module: {} Inside: {}".format(submodule_name,'>'.join(p[:-1])))
+                if idx<len(p):
+                    for submodule_name, submodule in module.named_children():
+                        if re.match(p[idx], submodule_name):
+                            if idx == len(p)-1:
+                                freeze_module(submodule)
+                                logger.info("Freezing module: {} Inside: {}".format(submodule_name,'>'.join(p[:-1])))
+                            else:
+                                stack.append((idx+1, submodule))
+
 
 def freeze_modules_based_on_opts(
     opts: argparse.Namespace, model: torch.nn.Module, verbose: bool = True

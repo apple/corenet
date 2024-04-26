@@ -244,15 +244,25 @@ def freeze_modules_based_on_opts(
     verbose = verbose and is_master(opts)
 
     if freeze_patterns:
-        # TODO: allow applying on all modules, not just immediate chidren? How?
+        immediate_children_patterns = []
+        nested_modules_patterns = []
+        # separate nested expressions from the rest
+        for p in freeze_patterns:
+            if ">" in p:
+                nested_modules_patterns.append(p.split(">"))
+            else:
+                immediate_children_patterns.append(p)
+
+        
+
         for name, module in model.named_children():
-            if any([re.match(p, name) for p in freeze_patterns]):
+            if any([re.match(p, name) for p in immediate_children_patterns]):
                 freeze_module(module)
                 if verbose:
                     logger.info("Freezing module: {}".format(name))
 
         for name, param in model.named_parameters():
-            if any([re.match(p, name) for p in freeze_patterns]):
+            if any([re.match(p, name) for p in immediate_children_patterns]):
                 param.requires_grad = False
                 if verbose:
                     logger.info("Freezing parameter: {}".format(name))

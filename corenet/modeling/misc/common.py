@@ -210,20 +210,20 @@ def freeze_module(module: torch.nn.Module, force_eval: bool = True) -> torch.nn.
 
     return module
 
-def _module_bfs(module:torch.nn.Module, p: list[str], idx=1) -> None:
+def _module_bfs(name:str, module:torch.nn.Module, p: list[str], idx=1) -> None:
             stack = deque()
-            stack.append((idx, module))
+            stack.append((idx, name, module))
             
             while stack:
-                idx, module = stack.popleft()
+                idx, path, module = stack.popleft()
                 if idx<len(p):
                     for submodule_name, submodule in module.named_children():
                         if re.match(p[idx], submodule_name):
                             if idx == len(p)-1:
                                 freeze_module(submodule)
-                                logger.info("Freezing module: {} Inside: {}".format(submodule_name,'>'.join(p[:-1])))
+                                logger.info("Freezing module: {} Inside: {}".format(submodule_name, path))
                             else:
-                                stack.append((idx+1, submodule))
+                                stack.append((idx+1, path+f">{submodule_name}",submodule))
 
 
 def freeze_modules_based_on_opts(
@@ -273,7 +273,7 @@ def freeze_modules_based_on_opts(
         for name, module in model.named_children():
             for p in nested_modules_patterns:
                 if re.match(p[0], name):
-                    _module_bfs(module, p, 1)        
+                    _module_bfs(name, module, p, 1)        
                     
             if any([re.match(p, name) for p in immediate_children_patterns]):
                 freeze_module(module)

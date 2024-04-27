@@ -631,7 +631,7 @@ class OpenELM(nn.Module):
         for module in self.modules():
             if isinstance(module, (nn.Linear)):
                 std = module.weight.shape[0] ** -0.5
-                module.apply(nn.init.normal(std=std), filter_fn=name_filter("wegiht"))
+                module.apply(nn.init.normal(std=std), filter_fn=name_filter("weight"))
                 module.apply(nn.init.constant(0.0), filter_fn=name_filter("bias"))
             elif isinstance(module, (nn.Embedding)):
                 std = model_dim**-0.5

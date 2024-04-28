@@ -175,7 +175,7 @@ task in the corresponding task folder.
 Each model class is decorated by a 
 `@MODEL_REGISTRY.register(name="<model_name>", type="<task_name>")` decorator. 
 To use a model class in CoreNet training or evaluation,
-assign `moels.<task_name>.name = <model_name>` in the YAML configuration.
+assign `model.<task_name>.name = <model_name>` in the YAML configuration.
 
 </td> <td> <pre>
 └── corenet

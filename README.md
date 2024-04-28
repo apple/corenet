@@ -59,7 +59,7 @@ cd corenet
 git lfs install
 git lfs pull
 # The following venv command is optional, but recommended. Alternatively, you can create and activate a conda environment.
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate # See the note No.2 below.
 python3 -m pip install --editable .
 ```
 
@@ -76,11 +76,11 @@ brew install git-lfs
 
 git clone git@github.com:apple/corenet.git
 cd corenet
-cd \$(pwd -P)  # See the note below.
+cd \$(pwd -P)  # See the note No.1 below.
 git lfs install
 git lfs pull
 # The following venv command is optional, but recommended. Alternatively, you can create and activate a conda environment.
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate # See the note No.2 below.
 python3 -m pip install --editable .
 ```
 
@@ -90,11 +90,10 @@ To install optional dependencies for audio and video processing:
 brew install sox ffmpeg
 ```
 
-Note that on macOS the file system is case insensitive, and case sensitivity
-can cause issues with Git. You should access the repository on disk as if the
-path were case sensitive, i.e. with the same capitalization as you see when you
-list the directories `ls`. You can switch to such a path with the `cd $(pwd -P)`
-command.
+> **Note that:**
+>
+> 1. On macOS the file system is case insensitive, and case sensitivity can cause issues with Git. You should access the repository on disk as if the path were case sensitive, i.e. with the same capitalization as you see when you list the directories `ls`. You can switch to such a path with the `cd $(pwd -P)` command.
+> 2. Recommends using Python version 3.11 for creating the virtual environment, which is the compatible version as of now. This suggestion allows for flexibility in future Python versions while ensuring compatibility with the current recommended version.
 
 
 ## Directory Structure

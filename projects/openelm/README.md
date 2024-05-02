@@ -13,7 +13,7 @@ We provide pretraining, evaluation, instruction tuning, and parameter-efficient 
 
 ## Tokenizer
 
-In our experiments, we used LLamav1/v2 tokenizer. Please download the tokenizer from the [official repository](https://github.com/meta-llama/llama).
+In our experiments, we used LLama v1/v2 tokenizer. Please download the tokenizer from the [official repository](https://github.com/meta-llama/llama).
 
 ## Bias, Risks, and Limitations
 

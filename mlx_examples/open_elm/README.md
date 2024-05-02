@@ -38,7 +38,7 @@ familiar with language modeling in MLX.
 Here's a usage example:
 
 ```
-PYTHONPATH=. mlx_examples/open_elm/inference.py \
+PYTHONPATH=. python3 mlx_examples/open_elm/inference.py \
     --model-dir <MLX model directory> \
     --prompt "Once upon a time in a land far away" \
     --max-tokens=1024
@@ -62,7 +62,7 @@ configuration. Then, execute the following command from the root of this
 repository:
 
 ```
-PYTHONPATH=. mlx_examples/open_elm/convert.py \
+PYTHONPATH=. python3 mlx_examples/open_elm/convert.py \
     --input-checkpoint <PyTorch/CoreNet checkpoint> \
     --config-yaml <CoreNet training configuration YAML> \
     --tokenizer-path <path to tokenizer.model> \

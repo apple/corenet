@@ -352,7 +352,7 @@ class TextTransformer(BaseTextEncoder):
         Returns token embeddings.
 
         Args:
-            text_tokens: A tensor containing token indicies. The shape of tensor is
+            text_tokens: A tensor containing token indices. The shape of tensor is
                 [batch size, sequence length].
             key_padding_mask: A boolean tensor indicating padding token indices.
             return_all_tokens: A boolean flag to return all tokens. Defaults to False
@@ -400,7 +400,7 @@ class TextTransformer(BaseTextEncoder):
         """Forward function for computing text features for zero-shot image classification.
 
         Args:
-            text_tokens: A tensor containing token indicies. The shape of tensor is
+            text_tokens: A tensor containing token indices. The shape of tensor is
                 [batch size, number of classes, number of captions, sequence length].
             key_padding_mask: A boolean tensor indicating padding token indices.
 
@@ -485,7 +485,7 @@ class TextTransformer(BaseTextEncoder):
         """Forward function for text encoder.
 
         Args:
-            text_tokens: A tensor containing token indicies. The shape of tensor could be:
+            text_tokens: A tensor containing token indices. The shape of tensor could be:
                 1. [batch size, sequence length] -> This input size typically corresponds to
                     pre-training tasks (e.g., Image-Text pretraining in CLIP).
                 2. [batch size, number of classes, number of captions, sequence length] -> This input size

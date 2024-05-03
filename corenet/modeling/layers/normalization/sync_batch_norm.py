@@ -14,7 +14,7 @@ from corenet.modeling.layers.normalization import register_norm_fn
 @register_norm_fn(name="sync_batch_norm")
 class SyncBatchNorm(nn.SyncBatchNorm):
     """
-    Applies a `Syncronized Batch Normalization <https://arxiv.org/abs/1502.03167>`_ over the input tensor
+    Applies a `Synchronized Batch Normalization <https://arxiv.org/abs/1502.03167>`_ over the input tensor
 
     Args:
         num_features (Optional, int): :math:`C` from an expected input of size :math:`(N, C, *)`

@@ -13,7 +13,7 @@ def filter_keys(
     @whitelist.
 
     Args:
-        d: Intput dictionary that will be copied with a subset of keys.
+        d: Input dictionary that will be copied with a subset of keys.
         whitelist: List of keys to keep in the output (if exist in input dict).
     """
 

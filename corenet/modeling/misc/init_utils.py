@@ -108,7 +108,7 @@ def initialize_norm_layers(module) -> None:
 
 
 def initialize_weights(opts, modules) -> None:
-    """Helper function to initialize differnet layers in a model"""
+    """Helper function to initialize different layers in a model"""
     # weight initialization
     conv_init_type = getattr(opts, "model.layer.conv_init", "kaiming_normal")
     linear_init_type = getattr(opts, "model.layer.linear_init", "normal")

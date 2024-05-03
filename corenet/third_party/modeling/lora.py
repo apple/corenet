@@ -366,7 +366,7 @@ class LoraLayer(BaseTunerLayer):
         self, adapter_name: str, init_lora_weights: Union[str, bool]
     ) -> None:
         """
-        Reset the LoRA paramters.
+        Reset the LoRA parameters.
 
         Args:
             adapter_name: The adapter on which to reset the parameters.

@@ -65,7 +65,7 @@ class SentencePieceTokenizer(BaseTextTokenizer):
                 "--text-tokenizer.sentence-piece.model-path",
                 type=str,
                 default=None,
-                help="Sentence peice model path. Defaults to None (i.e., user need to supply the model path).",
+                help="Sentence piece model path. Defaults to None (i.e., user need to supply the model path).",
             )
             group.add_argument(
                 "--text-tokenizer.sentence-piece.enable-nfc-normalization",

@@ -36,7 +36,7 @@ class VideoClipBatchSampler(VariableBatchSampler):
     clips come from, `num_clips` is the number of clip to sample from the current video,
     which is proportional to the length of the video; `video_fps` and `audio_fps` is the
     frame rate of video and audio to sample; `num_samples_per_clip` is the number of
-    samples to generate for each clip at training time, this varible is only valid at
+    samples to generate for each clip at training time, this variable is only valid at
     training time.
 
     Note that the variable image size and frame rate are only applied during the

@@ -94,7 +94,7 @@ class FullyShardedDataParallelWrapper(FullyShardedDataParallel):
 
         fsdp_parameters = inspect.signature(FullyShardedDataParallel).parameters
 
-        # Enabing `use_orig_params` tells FSDP not to flatten parameters, and enables us to specify different LR/weight decay values.
+        # Enabling `use_orig_params` tells FSDP not to flatten parameters, and enables us to specify different LR/weight decay values.
         # `use_orig_params` feature is available in PyTorch versions > 2.0
         extra_args_fsdp = (
             dict(use_orig_params=True)

@@ -1143,11 +1143,11 @@ class SSDCroping(BaseTransformation):
 
                     # should we use the box left and top corner or the crop's
                     current_boxes[:, :2] = np.maximum(current_boxes[:, :2], rect[:2])
-                    # adjust to crop (by substracting crop's left,top)
+                    # adjust to crop (by subtracting crop's left,top)
                     current_boxes[:, :2] -= rect[:2]
 
                     current_boxes[:, 2:] = np.minimum(current_boxes[:, 2:], rect[2:])
-                    # adjust to crop (by substracting crop's left,top)
+                    # adjust to crop (by subtracting crop's left,top)
                     current_boxes[:, 2:] -= rect[:2]
 
                     data["image"] = image
@@ -1176,13 +1176,13 @@ class SSDCroping(BaseTransformation):
                         instance_coords[..., :2] = np.maximum(
                             instance_coords[..., :2], rect[:2]
                         )
-                        # adjust to crop (by substracting crop's left,top)
+                        # adjust to crop (by subtracting crop's left,top)
                         instance_coords[..., :2] -= rect[:2]
 
                         instance_coords[..., 2:] = np.minimum(
                             instance_coords[..., 2:], rect[2:]
                         )
-                        # adjust to crop (by substracting crop's left,top)
+                        # adjust to crop (by subtracting crop's left,top)
                         instance_coords[..., 2:] -= rect[:2]
                         data["instance_coords"] = instance_coords
 

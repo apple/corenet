@@ -72,7 +72,7 @@ class Registry:
         # arguments before registering all items.
         self.arguments_accessed = False
         self.separator = separator
-        # Lazy loading to get rid of possible cicular dependencies
+        # Lazy loading to get rid of possible circular dependencies
         self._modules_loaded = False
         self._lazy_load_dirs = lazy_load_dirs
         self.internal_dirs = internal_dirs

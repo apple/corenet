@@ -92,7 +92,7 @@ def remove_param_name_key(model_params: List) -> None:
     to optimzier.
 
     Args:
-        model_params: A list of dictornaries, where each dictonary element is expected to have
+        model_params: A list of dictionaries, where each dictionary element is expected to have
             three keys: (1) params: an instance of torch.nn.Parameter, (2) weight decay, and (3) param_names.
 
     ...note:

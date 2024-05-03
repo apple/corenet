@@ -332,7 +332,7 @@ def _search_for_label_edge_timestamp(
         class_label_name: The string name of the target class's annotation to search.
         track_rectangles: The annotation of an identity across time.
         cur_idx: The index of the annotation in `track_rectangles` to start searching.
-        step: The step to search for the timetamp. A positive step indicates the
+        step: The step to search for the timestamp. A positive step indicates the
             timstamp should be after `cur_idx`'s; while a negative step indicates the
             timestamp should be before `cur_idx`'s.
         interpolation_cutoff_threshold_sec: The threshold of timestamp difference where
@@ -413,7 +413,7 @@ def _interpolate_bounding_box(
             f"@range_delta must be positive. Got range_delta={range_delta}."
         )
     if delta < 0 or delta - range_delta > EPS:
-        # Some floating point arithmatic causes delta-range_delta to be a small value
+        # Some floating point arithmetic causes delta-range_delta to be a small value
         # above zero even if they're equal. Hence the epsilon.
         raise ValueError(
             f"@delta must be between 0 and @range_delta, inclusively. Got delta={delta},"

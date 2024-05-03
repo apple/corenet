@@ -26,7 +26,7 @@ class XRegNetBlock(BaseModule):
         groups: Number of groups for convolution
         bottleneck_multiplier: The number of in/out channels of the intermediate
             conv layer will be scaled by this value
-        se_ratio: The numer squeeze-excitation ratio. The number of channels in the SE
+        se_ratio: The number squeeze-excitation ratio. The number of channels in the SE
             module will be scaled by this value
         stochastic_depth_prob: The stochastic depth probability
     """
@@ -134,7 +134,7 @@ class XRegNetBlock(BaseModule):
         Args:
             x: Batch of images
 
-        Retruns:
+        Returns:
             * output of XRegNetBlock including stochastic depth layer and
                 residual.
 
@@ -175,7 +175,7 @@ class AnyRegNetStage(BaseModule):
         groups: Number of groups for the intermediate convolution (bottleneck) layer in each block
         bottleneck_multiplier: The number of in/out channels of the intermediate
             conv layer of each block will be scaled by this value
-        se_ratio: The numer squeeze-excitation ratio. The number of channels in the SE
+        se_ratio: The number squeeze-excitation ratio. The number of channels in the SE
             module of each block will be scaled by this value
         stage_depths: A list of the number of blocks in each stage
         stage_index: The index of the current stage being constructed

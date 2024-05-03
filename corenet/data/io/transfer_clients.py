@@ -169,7 +169,7 @@ class BaseClient(object):
                 self._download_with_retries(remote_path, local_path)
 
         if self.sync_distributed_ranks:
-            # syncronize between ranks
+            # synchronize between ranks
             dist_barrier()
         return local_path
 
@@ -401,7 +401,7 @@ def get_transfer_client(
         max_retries: Maximum download retries. Defaults to 5.
         force_delete: Force the file to be deleted if it is present in the `cache_loc`.
         only_download_on_start_rank: Download the files on the start rank of each node.
-        synchronize_distributed_ranks: Syncronize DDP ranks after downloading.
+        synchronize_distributed_ranks: Synchronize DDP ranks after downloading.
         parallel_download: If enabled, files are downloaded in parallel.
         max_download_workers: Maximum number of workers for downloading. Should satisfy 1 <= 'max_download_workers' <= num_cpus.
         raise_error_if_transfer_client_not_present: Raise an error if client is not present.

@@ -100,7 +100,7 @@ def basic_blocks(
 @MODEL_REGISTRY.register(name="fastvit", type="classification")
 class FastViT(BaseImageEncoder):
     """
-    This class implements `FastViT architecture <todo: add arxiv link here>`_
+    This class implements `FastViT architecture <https://arxiv.org/abs/2303.14189>`_
     """
 
     def __init__(self, opts: argparse.Namespace, *args, **kwargs) -> None:

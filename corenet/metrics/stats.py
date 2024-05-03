@@ -119,7 +119,7 @@ class Statistics(object):
         return metric_stats
 
     # TODO: change name: avg is presumptuous
-    def avg_statistics(
+    def compute_avg_statistics(
         self, metric_name: str, sub_metric_name: Optional[str] = None, *args, **kwargs
     ) -> float:
         """

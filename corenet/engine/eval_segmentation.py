@@ -256,12 +256,12 @@ def apply_color_map_to_segmentation_masks(
                 interpolation=F_vision.InterpolationMode.BILINEAR,
             )
 
-        overlayed_img = Image.blend(pred_mask_pil, orig_image, alpha=alpha)
+        overlay_img = Image.blend(pred_mask_pil, orig_image, alpha=alpha)
         overlay_mask_dir = "{}/predictions_overlay".format(save_dir)
         if not os.path.isdir(overlay_mask_dir):
             os.makedirs(overlay_mask_dir, exist_ok=True)
         overlay_mask_f_name = "{}/{}".format(overlay_mask_dir, file_name)
-        overlayed_img.save(overlay_mask_f_name)
+        overlay_img.save(overlay_mask_f_name)
         logger.log(
             "RGB image blended with mask is saved at: {}".format(overlay_mask_f_name)
         )

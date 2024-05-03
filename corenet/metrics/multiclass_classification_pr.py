@@ -419,7 +419,7 @@ class MulticlassClassificationPR(BaseMetric):
         Flatten the given metric @values, prepending @metric_name to the
         resulting dictionary's keys.
 
-        Unlike the base class's method, we do not recurisvely flatten. This is
+        Unlike the base class's method, we do not recursively flatten. This is
         because we have lists of PR curve values, and we don't want to generate
         an enormous number of keys to avoid inefficient storage.
 

@@ -25,7 +25,7 @@ def modeling_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     parser = arguments_image_projection_head(parser)
     # model arguments
     parser = arguments_model(parser)
-    # neural network layer argumetns
+    # neural network layer arguments
     parser = arguments_nn_layers(parser)
     # EMA arguments
     parser = arguments_ema(parser)

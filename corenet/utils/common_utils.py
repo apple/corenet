@@ -27,7 +27,7 @@ def construct_local_path_from_remote(remote_path: str, local_dir: str) -> str:
 
     Args:
         remote_path: The remote file path.
-        local_dir: Local diretory.
+        local_dir: Local directory.
 
     Returns:
         The corresponding local file path.

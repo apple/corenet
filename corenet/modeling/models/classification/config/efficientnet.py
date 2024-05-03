@@ -85,7 +85,7 @@ def get_configuration(opts) -> Dict:
         )
 
         # Build the configuration at each spatial level.
-        # The format of configuraiton is: (expand_ratio, kernel, stride, in_channels, out_channels, num_layers)
+        # The format of configuration is: (expand_ratio, kernel, stride, in_channels, out_channels, num_layers)
 
         # Configuration at output stride of 2
         network_config["layer_1"] = [block_builder(1, 3, 1, 32, 16, 1)]

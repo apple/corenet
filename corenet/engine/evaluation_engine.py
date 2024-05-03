@@ -29,7 +29,7 @@ class Evaluator:
         criteria: BaseCriteria,
     ) -> None:
         """
-        Evaluates the criteria on a validation or test dateset using a model.
+        Evaluates the criteria on a validation or test dataset using a model.
 
         Args:
             opts: The command-line arguments as a namespace.

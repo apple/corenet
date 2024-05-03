@@ -188,7 +188,7 @@ class BaseImageClassificationDataset(BaseImageDataset, ImageFolder):
         """
         Returns transformations applied to the input in validation mode.
 
-        Oder of augmentations: Resize followed by CenterCrop
+        Order of augmentations: Resize followed by CenterCrop
         """
 
         if not getattr(self.opts, "image_augmentation.resize.enable"):

@@ -10,11 +10,11 @@ from torch import Tensor
 from torch.nn import functional as F
 
 from corenet.loss_fn import LOSS_REGISTRY
-from corenet.loss_fn.language_modeling.base_lm import BaseLangugeModelingCriteria
+from corenet.loss_fn.language_modeling.base_lm import BaseLanguageModelingCriteria
 
 
 @LOSS_REGISTRY.register(name="cross_entropy", type="language_modeling")
-class CrossEntropyLM(BaseLangugeModelingCriteria):
+class CrossEntropyLM(BaseLanguageModelingCriteria):
     """Cross entropy loss function for language modeling tasks.
 
     Args:

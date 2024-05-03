@@ -34,7 +34,7 @@ class FlashTransformerEncoder(BaseModule):
         bias: Use bias. Defaults to False.
         dropout: Dropout rate. Defaults to 0.0.
         ffn_dropout: Dropout between FFN layers. Defaults to 0.0.
-        ffn_multiplier: Multiplier for controling the width in Feed-forward network (FFN). Defaults to 4.0.
+        ffn_multiplier: Multiplier for controlling the width in Feed-forward network (FFN). Defaults to 4.0.
         stochastic_dropout: Stochastic dropout setting. Default: 0.0.
         norm_layer_name: Normalization layer name. Defaults to "layer_norm".
         divisible_by: Ensure that FFN dimensions are divisible by this factor. Defaults to 16.

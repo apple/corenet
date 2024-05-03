@@ -40,7 +40,7 @@ def get_local_path(
         cache_loc: Location where file needs to be stored after downloading.
         force_delete: Force the file to be deleted if it is present in the `cache_loc`.
         use_start_rank: Download the files on the start rank of each node.
-        sync_ranks: Syncronize DDP ranks after downloading.
+        sync_ranks: Synchronize DDP ranks after downloading.
         max_retries: Maximum download retries. Defaults to 5.
         parallel_download: If enabled, files are downloaded in parallel.
         max_download_workers: Maximum number of workers for downloading. Should satisfy 1 <= 'max_download_workers' <= num_cpus.
@@ -124,7 +124,7 @@ def download_assets_in_parallel(
 
     cuda_available = torch.cuda.is_available()
 
-    # For CPU, world_size and n_gpus_per_node should be 1 to avoid divion-by-zero errors
+    # For CPU, world_size and n_gpus_per_node should be 1 to avoid division-by-zero errors
     world_size = max(getattr(opts, "ddp.world_size"), 1)
     n_gpus_per_node = torch.cuda.device_count() if cuda_available else 1
     current_device = torch.cuda.current_device() if cuda_available else 0

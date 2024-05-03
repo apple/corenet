@@ -341,7 +341,7 @@ class GeneralLMDataset(BaseLMIterableDataset):
                     file_names_i.append(file_name)
 
                 file_names.extend(file_names_i)
-                # each file is expcted to have the same text key.
+                # each file is expected to have the same text key.
                 text_keys.extend([item["text_key"]] * len(file_names_i))
             else:
                 logger.error(
@@ -585,7 +585,7 @@ class GeneralLMDataset(BaseLMIterableDataset):
                 local_file_path = self._download_if_required(remote_file_path)
 
                 logger.info(
-                    f"Processsing {local_file_path} on worker {self.worker_id} of rank {self.rank}"
+                    f"Processing {local_file_path} on worker {self.worker_id} of rank {self.rank}"
                 )
 
                 if prev_file_path is None:

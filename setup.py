@@ -54,10 +54,10 @@ def main() -> None:
         )
 
     # When installed as a library in other projects, we don't need dev requirements.
-    dev_requirements_regex = r"^(black|isort|pytest)"
+    dev_requirement_regex = r"^(black|isort|pytest)"
     dev_requirements = []
     for req in requirements[:]:
-        if re.match(dev_requirements_regex, req):
+        if re.match(dev_requirement_regex, req):
             dev_requirements.append(req)
             requirements.remove(req)
 
@@ -89,7 +89,7 @@ def main() -> None:
         version=version,
         description="CoreNet: A library for training computer vision networks",
         url="https://github.com/apple/corenet.git",
-        python_requires=">=3.6",
+        python_requires=">=3.9",
         setup_requires=[
             "setuptools>=18.0",
         ],

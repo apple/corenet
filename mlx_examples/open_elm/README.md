@@ -25,7 +25,8 @@ The pre-converted checkpoints are available at the following URLs.
 
  Note that these checkpoints do not contain a tokenizer model file, which is
  required for inference with `inference.py`. Simply place Meta LLaMA2's
- `tokenizer.model` into the same directories to store the above downloaded model weights, or if you prefer to use the models directly, use the
+ `tokenizer.model` into the directories to load model using our provided
+ `inference.py`, or if you prefer to use the models directly, use the
  corresponding tokenizer from Huggingface Transformers.
 
 ## Running the model

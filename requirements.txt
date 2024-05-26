@@ -7,10 +7,10 @@ pyyaml==6.0.1
 # requirement for Pytorch, Torchvision, TorchText.
 # This section must be synchronized with the Dockerfile for
 # the image used in CI
-torch==2.2.1
-torchvision==0.17.1
+torch==2.2.2
+torchvision==0.17.2
 torchtext==0.17.2
-torchaudio==2.2.1
+torchaudio==2.2.2
 torchdata==0.7.1
 
 # dependency for coremltools

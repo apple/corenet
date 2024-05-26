@@ -9,7 +9,7 @@ pyyaml==6.0.1
 # the image used in CI
 torch==2.2.1
 torchvision==0.17.1
-torchtext==0.17.1
+torchtext==0.17.2
 torchaudio==2.2.1
 torchdata==0.7.1
 

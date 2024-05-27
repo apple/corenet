@@ -88,7 +88,7 @@ dataset:
         # We recommend users to follow the similar steps and rename the files. Expected format for each subset is 
         # mentioned below.
 
-        ### Glutenberg books
+        ### Gutenberg books
         {
           # "file_name": "LOCATION_OF_DOWNLOADED_DOLMAv1.6_DATA/books/books-{file_id:04d}.json.gz",
           "text_key": "text",

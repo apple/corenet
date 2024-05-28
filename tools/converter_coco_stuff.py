@@ -20,7 +20,7 @@ from corenet.utils import logger
 # Generates remaps for COCO-Stuff labels to 171 classes.
 # Skips some of the labels that are not annotated.
 def generate_cocostuff_remap():
-    cocostuff_skips = {11, 25, 28, 29, 44, 65, 67, 70, 82, 90, 179, 181}  # IDs that are skipped
+    cocostuff_skips = {11, 25, 28, 29, 44, 65, 67, 68, 70, 82, 90}  # IDs that are skipped
     remap_info = {}
     new_id = 0
     for old_id in range(182):

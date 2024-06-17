@@ -168,6 +168,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--print-output",
         action="store_true",
+        default=True,
         help="When specified, output will be printed to console.",
     )
 

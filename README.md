@@ -23,7 +23,7 @@ CoreNet is a deep neural network toolkit that allows researchers and engineers t
 
 Below is the list of publications from Apple that uses CoreNet. Also, training and evaluation recipes, as well as links to pre-trained models, can be found inside the [projects](./projects/) folder. Please refer to it for further details.
 
-   * [KV Prediction for Improved Time to First Token](TODO add arxiv link)
+   * KV Prediction for Improved Time to First Token
    * [OpenELM: An Efficient Language Model Family with Open Training and Inference Framework](https://arxiv.org/abs/2404.14619)
    * [CatLIP: CLIP-level Visual Recognition Accuracy with 2.7x Faster Pre-training on Web-scale Image-Text Data](https://arxiv.org/abs/2404.15653)
    * [Reinforce Data, Multiply Impact: Improved Model Accuracy and Robustness with Dataset Reinforcement](https://arxiv.org/abs/2303.08983)

@@ -6,6 +6,7 @@
 import os
 from typing import List, Optional
 
+import coremltools as ct
 import torch
 
 from corenet.constants import TMP_RES_FOLDER
@@ -45,8 +46,21 @@ def main_worker_conversion(args: Optional[List[str]] = None):
 
     try:
         convert_to = "mlprogram" if coreml_extn == "mlpackage" else "neuralnetwork"
+        minimum_deployment_target = getattr(
+            opts, "conversion.minimum_deployment_target"
+        )
+        if minimum_deployment_target is not None:
+            minimum_deployment_target = ct.target[minimum_deployment_target]
+        compute_precision = getattr(opts, "conversion.compute_precision")
+        if compute_precision is not None:
+            compute_precision = ct.precision[compute_precision]
+
         converted_models_dict = convert_pytorch_to_coreml(
-            opts=opts, pytorch_model=model, convert_to=convert_to
+            opts=opts,
+            pytorch_model=model,
+            convert_to=convert_to,
+            minimum_deployment_target=minimum_deployment_target,
+            compute_precision=compute_precision,
         )
         coreml_model = converted_models_dict["coreml"]
         jit_model = converted_models_dict["jit"]

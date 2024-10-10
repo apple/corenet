@@ -106,15 +106,14 @@ def exclude_yaml_from_test(yaml_file_path: Path) -> bool:
     if part0 == ".":
         part0 = yaml_file_path.parts[1]
 
-    if part0 in ("pipeline.yaml", "results", ".tox"):
+    if part0 in ("pipeline.yaml", "results", "venv", ".tox"):
         return True
 
     with open(yaml_file_path, "r") as f:
         first_line = f.readline().rstrip()
-        return (
-            first_line.startswith("#")
-            and first_line.lower().replace(" ", "") == "#pytest:disable"
-        )
+        return first_line.startswith("#") and first_line.lower().replace(
+            " ", ""
+        ).startswith("#pytest:disable")
 
 
 def pytest_generate_tests(metafunc):

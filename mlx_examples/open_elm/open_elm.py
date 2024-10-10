@@ -674,6 +674,10 @@ def load_model(
     quantization = config.pop("quantization", None)
     model = OpenELM(**config)
     if quantization is not None:
+        # Quanitzation is not backwards compatible in 0.11.0.
+        assert (
+            mx.__version__ == "0.10.0"
+        ), f"Quantization support requires version 0.10.0. You have {mx.__version__}."
         nn.QuantizedLinear.quantize_module(model, **quantization)
     with weights_path.open("rb") as f:
         model_state = mx.load(f)

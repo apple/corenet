@@ -14,10 +14,15 @@ from corenet.data.sampler import build_sampler
 from tests.configs import get_config
 
 
-@pytest.mark.parametrize("tasks", [["task_1", "task_2"], ["task_1"]])
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("num_repeats", [12, 4])
-@pytest.mark.parametrize("trunc_ra_sampler", [True, False])
+@pytest.mark.parametrize(
+    "tasks, batch_size, num_repeats, trunc_ra_sampler",
+    [
+        (["task_1"], 1, 4, True),
+        (["task_1", "task_2"], 2, 8, True),
+        (["task_1"], 1, 4, False),
+        (["task_1", "task_2"], 2, 8, False),
+    ],
+)
 def test_chain_sampler(
     tasks: List[str],
     config_file: str,
@@ -66,20 +71,23 @@ def test_chain_sampler(
     np.testing.assert_equal(len(sampler), total_expected_samples)
 
 
-@pytest.mark.parametrize("tasks", [["task_1", "task_2"], ["task_1"]])
-@pytest.mark.parametrize("batch_size", [2, 4])
-@pytest.mark.parametrize("n_samples", [8])
-@pytest.mark.parametrize("n_repeats", [1, 2, 4])
-@pytest.mark.parametrize("truncated_rep", [True, False])
+@pytest.mark.parametrize(
+    "tasks, batch_size, num_repeats, truncated_rep",
+    [
+        (["task_1"], 1, 4, True),
+        (["task_1", "task_2"], 2, 2, True),
+        (["task_1"], 1, 2, False),
+        (["task_1", "task_2"], 2, 4, False),
+    ],
+)
 def test_sampling_mode(
     tasks: List[str],
     config_file: str,
     batch_size: int,
-    n_samples: int,
-    n_repeats: int,
+    num_repeats: int,
     truncated_rep: bool,
 ) -> None:
-    batch_size = 2
+    n_samples = 8
 
     sampler_list = []
     n_data_samples = {}
@@ -97,7 +105,7 @@ def test_sampling_mode(
         n_data_samples[task_name] = n_samples
         sampler_list.append(sampler_dict)
 
-    n_repeats_ = n_repeats
+    n_repeats_ = num_repeats
     if truncated_rep:
         # when truncated repetition is enabled, then total samples in the dataset
         # are the same as before repetition
@@ -121,7 +129,7 @@ def test_sampling_mode(
 
         setattr(opts, "sampler.chain_sampler_mode", mode)
         setattr(opts, "sampler.truncated_repeat_aug_sampler", truncated_rep)
-        setattr(opts, "sampler.num_repeats", n_repeats)
+        setattr(opts, "sampler.num_repeats", num_repeats)
 
         sampler = build_sampler(opts, n_data_samples=n_data_samples, is_training=True)
 

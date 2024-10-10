@@ -4,6 +4,7 @@
 #
 
 import argparse
+import os
 import time
 
 import torch
@@ -50,6 +51,10 @@ class Evaluator:
         self.stage_name = getattr(opts, "common.eval_stage_name", "evaluation")
 
         self.mixed_precision_training = getattr(opts, "common.mixed_precision", False)
+        self.save_location = getattr(opts, "common.exp_loc")
+        self.save_location = os.path.join(self.save_location, "eval")
+        if not os.path.exists(self.save_location):
+            os.makedirs(self.save_location, exist_ok=True)
         self.mixed_precision_dtype = getattr(
             opts, "common.mixed_precision_dtype", "float16"
         )
@@ -60,7 +65,7 @@ class Evaluator:
             self.ckpt_submetric,
         ) = parse_validation_metric_names(self.opts)
 
-        self.log_writers = get_log_writers(self.opts, save_location=None)
+        self.log_writers = get_log_writers(self.opts, save_location=self.save_location)
 
     def eval_fn(self) -> None:
         model = self.model
@@ -124,5 +129,7 @@ class Evaluator:
     def run(self) -> None:
         eval_start_time = time.time()
         self.eval_fn()
+        for log_writer in self.log_writers:
+            log_writer.close()
         eval_end_time = time.time() - eval_start_time
         logger.log("Evaluation took {} seconds".format(eval_end_time))

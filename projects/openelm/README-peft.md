@@ -14,7 +14,7 @@ cd /path/to/corenet
 git clone https://github.com/EleutherAI/lm-evaluation-harness.git
 cd lm-evaluation-harness
 git checkout 3196e907fa195b684470a913c7235ed7f08a4383
-pip install -e .
+python3 -m pip install -e . -c ../requirements.txt
 cd ..
 
 # Install LLM Adapters.
@@ -22,14 +22,16 @@ git clone https://github.com/AGI-Edgerunners/LLM-Adapters.git
 cd LLM-Adapters
 git checkout 816657208af4db747803f87ba40a4c71383fed7a
 touch __init__.py
-pip install -r requirements.txt -c ../internal/constraints.txt
+python3 -m pip install -r requirements.txt -c ../requirements.txt
 cd ..
 
 # Install Huggingface and its dependencies.
-python3 -m pip install --upgrade transformers==4.36.2
-python3 -m pip install --upgrade datasets==2.19.0
-python3 -m pip install --upgrade accelerate==0.29.3
-python3 -m pip install --upgrade sentencepiece==0.2.0
+python3 -m pip install --upgrade \
+    transformers==4.36.2 \
+    datasets==2.19.0 \
+    accelerate==0.29.3 \
+    sentencepiece==0.2.0 \
+    -c requirements.txt
 ```
 
 In our experiments, we used LLamav1/v2 tokenizer. Please download the tokenizer from the [official repository](https://github.com/meta-llama/llama).

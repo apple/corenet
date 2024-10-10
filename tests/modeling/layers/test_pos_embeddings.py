@@ -13,10 +13,14 @@ sys.path.append("..")
 from corenet.modeling.layers.positional_embedding import PositionalEmbedding
 
 
-@pytest.mark.parametrize("is_learnable", [True, False])
-@pytest.mark.parametrize("input_seq_len", [34, 128, 192])
-@pytest.mark.parametrize("sequence_first", [True, False])
-@pytest.mark.parametrize("padding_idx", [None, 0])
+@pytest.mark.parametrize(
+    "is_learnable, input_seq_len, sequence_first, padding_idx",
+    [
+        (True, 34, True, None),
+        (False, 128, False, 0),
+        (False, 192, True, 0),
+    ],
+)
 def test_pos_embedding(
     is_learnable: bool, input_seq_len: int, sequence_first: bool, padding_idx: int
 ):

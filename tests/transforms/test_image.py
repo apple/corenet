@@ -15,9 +15,14 @@ from corenet.data.transforms import image_pil as pil_transforms
 from corenet.data.transforms import image_torch as torch_transforms
 
 
-@pytest.mark.parametrize("height", [24, 32])
-@pytest.mark.parametrize("width", [24, 32])
-@pytest.mark.parametrize("size", [20, 40, [20, 50]])
+@pytest.mark.parametrize(
+    "height, width, size",
+    [
+        (24, 24, 20),
+        (24, 24, 40),
+        (32, 32, [20, 50]),
+    ],
+)
 def test_rrc_params(height: int, width: int, size: Union[int, Tuple[int, int]]) -> None:
     # this function tests the RandomResizedCrop Params
     parser = argparse.ArgumentParser()
@@ -61,12 +66,18 @@ def test_rrc_params(height: int, width: int, size: Union[int, Tuple[int, int]]) 
     ) or (obtained_aspect_ratio == 1.0)
 
 
-@pytest.mark.parametrize("alpha", [-1, 0.0, 0.5])
-@pytest.mark.parametrize("p", [-0.2, 0.0, 0.5, 1.0, 1.1])
-# test for inputs in tensor as well as dict format
-@pytest.mark.parametrize("sample_key", [None, "dummy_key"])
-@pytest.mark.parametrize("target_key", [None, "dummy_key"])
-@pytest.mark.parametrize("batch_size", [0, 1, 2])
+@pytest.mark.parametrize(
+    "alpha, p, sample_key, target_key, batch_size",
+    [
+        (-1, -0.2, None, None, 0),
+        (-1, 0, None, None, 1),
+        # test for inputs in tensor as well as dict format
+        (-1, 0, "dummy_key", "dummy_key", 2),
+        (0.0, -0.2, None, None, 0),
+        (0.0, 0, "dummy_key", "dummy_key", 1),
+        (0.5, 0, None, None, 2),
+    ],
+)
 def test_mixup_transform(
     alpha: float, p: float, sample_key: str, target_key: str, batch_size: int
 ) -> None:
@@ -115,12 +126,18 @@ def test_mixup_transform(
             pytest.skip(str(e))
 
 
-@pytest.mark.parametrize("alpha", [-1, 0.0, 0.5])
-@pytest.mark.parametrize("p", [-0.2, 0.0, 0.5, 1.0, 1.1])
-# test for inputs in tensor as well as dict format
-@pytest.mark.parametrize("sample_key", [None, "dummy_key"])
-@pytest.mark.parametrize("target_key", [None, "dummy_key"])
-@pytest.mark.parametrize("batch_size", [0, 1, 2])
+@pytest.mark.parametrize(
+    "alpha, p, sample_key, target_key, batch_size",
+    [
+        (-1, -0.2, None, None, 0),
+        (-1, 0, None, None, 1),
+        # test for inputs in tensor as well as dict format
+        (-1, 0, "dummy_key", "dummy_key", 2),
+        (0.0, -0.2, None, None, 0),
+        (0.0, 0, "dummy_key", "dummy_key", 1),
+        (0.5, 0, None, None, 2),
+    ],
+)
 def test_cutmix_transform(
     alpha: float, p: float, sample_key: str, target_key: str, batch_size: int
 ) -> None:

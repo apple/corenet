@@ -52,6 +52,9 @@ def test_metric(
         opts, "stats.metrics.multiclass_classification_pr.include_curve", include_curve
     )
     setattr(
+        opts, "stats.metrics.multiclass_classification_pr.include_classwise_ap", False
+    )
+    setattr(
         opts,
         "stats.metrics.multiclass_classification_pr.suppress_warnings",
         suppress_warnings,
@@ -115,6 +118,9 @@ def test_flatten_metric(include_curve: bool, suppress_warnings: bool) -> None:
     opts = argparse.Namespace()
     setattr(
         opts, "stats.metrics.multiclass_classification_pr.include_curve", include_curve
+    )
+    setattr(
+        opts, "stats.metrics.multiclass_classification_pr.include_classwise_ap", False
     )
     setattr(
         opts,

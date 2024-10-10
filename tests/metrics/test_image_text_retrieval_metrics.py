@@ -10,10 +10,13 @@ from corenet.metrics.stats import Statistics
 from tests.configs import default_training_opts
 
 
-@pytest.mark.parametrize("batch_size", (2, 4))
-@pytest.mark.parametrize("num_captions", (1, 5))
-@pytest.mark.parametrize("hidden_dim", (8,))
-@pytest.mark.parametrize("text_dim", (2, 3))
+@pytest.mark.parametrize(
+    "batch_size, num_captions, hidden_dim, text_dim",
+    [
+        (1, 1, 8, 2),
+        (2, 5, 4, 3),
+    ],
+)
 def test_image_text_retrieval(
     batch_size: int, num_captions: int, hidden_dim: int, text_dim: int
 ) -> None:

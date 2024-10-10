@@ -10,13 +10,12 @@ from typing import Dict, Optional, Tuple, Union
 
 import torch
 from torch import Tensor
-from torch.nn import functional as F
 
 from corenet.constants import if_test_env
 from corenet.data.loader.dataloader import CoreNetDataLoader
 from corenet.data.transforms.image_torch import apply_mixing_transforms
 from corenet.engine.default_trainer import DefaultTrainer
-from corenet.engine.utils import get_batch_size
+from corenet.engine.utils import get_batch_size, step_log_metrics
 from corenet.loss_fn.base_criteria import BaseCriteria
 from corenet.metrics.stats import Statistics
 from corenet.modeling.misc.averaging_utils import EMA
@@ -212,7 +211,14 @@ class FSDPTrainer(DefaultTrainer):
                     learning_rate=lr,
                     elapsed_time=epoch_start_time,
                 )
-
+                train_metrics = train_stats._compute_avg_statistics_all()
+                for log_writer in self.log_writers:
+                    step_log_metrics(
+                        lrs=lr,
+                        log_writer=log_writer,
+                        step=self.train_iterations,
+                        metrics=train_metrics,
+                    )
             batch_load_start = time.time()
 
         avg_loss = train_stats.avg_statistics(

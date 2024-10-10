@@ -1,0 +1,26 @@
+# pytest: disable
+
+dataset:
+  name: "general_lm"
+  category: "language_modeling"
+
+model:
+  language_modeling:
+    name: "kv_prediction"
+    kv_prediction:
+      auxkv_num_layers_to_basekv_num_layers: [0, 0, 1]
+      base_model:
+       - model:
+          language_modeling:
+            name: "layer_pruned_general_gpt"
+            general_gpt:
+              model_name: "gpt-test-base"
+      auxiliary_model:
+       - model:
+          language_modeling:
+            name: "layer_pruned_general_gpt"
+            general_gpt:
+              model_name: "gpt-test-aux"
+    general_gpt:
+      vocab_size: 100
+      max_context_length: 100

@@ -4,6 +4,7 @@
 #
 
 import os
+import re
 import sys
 import time
 import traceback
@@ -152,3 +153,62 @@ def disable_printing():
 
 def enable_printing():
     sys.stdout = sys.__stdout__
+
+
+def match_warning_message(*message_segments: str) -> str:
+    """Creates a regex that matches warnings given a partial warning message.
+
+    It escapes the dots and special characters and also replaces whitespaces with \\s+,
+    so that the users copy-paste the warning message to the input of this function.
+
+    Args:
+        message_segments: The warning message, copy-pasted from console logs. When
+            multiple segments are passed as inputs, the regex will match warnings that
+            contain all of segments in order they were provided.
+
+    Returns:
+        A regex that matches the message robustly, handling whitespaces and escaping.
+    """
+    regex_segments = [""]
+
+    for segment in message_segments:
+        segment = re.sub(r"\s+", " ", segment)  # Replace all whitespaces with " "
+        segment = re.escape(segment)  # The input pattern is not a regular expression
+        segment = re.sub(r"\\ ", r"\\s+", segment)
+        regex_segments.append(segment)
+
+    return ".*".join(regex_segments)
+
+
+def indent(multiline_str: str, prefix: str = "\t") -> str:
+    """Indents each line in of the input string.
+
+    Args:
+        multiline_str: The input string to indent.
+        prefix: The prefix insert at the beginning of each line for indentation.
+            Defaults to the tab character.
+
+    Returns:
+        The input @multiline_str, modified by prefixing each line with @prefix.
+    """
+    lines = multiline_str.split("\n")
+    lines = (prefix + line for line in lines)
+    lines = "\n".join(lines)
+    return lines
+
+
+def truncate(text: str, max_len: int = 79) -> str:
+    """Truncates a string by a maximum length limit, to keep the logs readable.
+
+    Args:
+        text: The input string to truncate.
+
+    Returns:
+        The input @text string, truncated by a maximum length of @max_len.
+    """
+    assert max_len > 5
+
+    if len(text) <= max_len:
+        return text
+
+    return text[: max_len - 5] + "[...]"

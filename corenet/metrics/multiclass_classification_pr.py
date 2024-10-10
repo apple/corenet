@@ -158,6 +158,9 @@ class MulticlassClassificationPR(BaseMetric):
         self.include_curve = getattr(
             opts, "stats.metrics.multiclass_classification_pr.include_curve"
         )
+        self.include_classwise_ap = getattr(
+            opts, "stats.metrics.multiclass_classification_pr.include_classwise_ap"
+        )
         self.suppress_warnings = getattr(
             opts, "stats.metrics.multiclass_classification_pr.suppress_warnings"
         )
@@ -179,6 +182,11 @@ class MulticlassClassificationPR(BaseMetric):
                 "--stats.metrics.multiclass-classification-pr.include-curve",
                 action="store_true",
                 help="If set, PR curves will be stored.",
+            )
+            parser.add_argument(
+                "--stats.metrics.multiclass-classification-pr.include-classwise-ap",
+                action="store_true",
+                help="If set, AP will be plotted for each class.",
             )
             parser.add_argument(
                 "--stats.metrics.multiclass-classification-pr.suppress-warnings",
@@ -375,6 +383,10 @@ class MulticlassClassificationPR(BaseMetric):
             metrics[average] = float(
                 average_precision_score(targets, predictions, average=average)
             )
+
+        if self.include_classwise_ap:
+            for i, v in enumerate(metrics["AP"]):
+                metrics[f"AP-class{i}"] = v
 
         return metrics
 

@@ -24,6 +24,7 @@ from corenet.utils import logger, resources
 from corenet.utils.common_utils import construct_local_path_from_remote
 from corenet.utils.ddp_utils import dist_barrier, is_master, is_start_rank_node
 from corenet.utils.registry import Registry
+from corenet.utils.retry_utils import run_with_retries
 
 
 class BaseClient(object):
@@ -58,7 +59,8 @@ class BaseClient(object):
         n_cpus = resources.cpu_count()
         if max_download_workers < 1 or max_download_workers > n_cpus:
             raise RuntimeError(
-                f"Maximum number of download workers should be between 1 and number of available CPUs. Got: {max_download_workers}."
+                "Maximum number of download workers should be between 1 and number of"
+                f" available CPUs. Got: {max_download_workers}."
             )
         self.opts = opts
         self.max_retries = max_retries
@@ -92,7 +94,7 @@ class BaseClient(object):
         return getattr(opts, "ddp.use_distributed", False) and sync_ranks
 
     def _download_fn(self, remote_path: str, local_path: str) -> None:
-        """Logic for downloading 'remote_path' to 'local_path'. Throws exception if it fails.
+        """Attempts downloading 'remote_path' to 'local_path' without retries.
 
         Args:
             remote_path: Remote file path.
@@ -104,21 +106,12 @@ class BaseClient(object):
 
     def _download_with_retries(self, remote_path: str, local_path: str) -> None:
         """Download 'remote_path' to 'local_path' with retries."""
-        for num_tries in range(self.max_retries):
-            try:
-                return self._download_fn(remote_path, local_path)
-            except Exception as e:
-                wait_duration = 2**num_tries * random.uniform(0.5, 1.0)
-                logger.warning(
-                    f"Failed download attempt {num_tries}, Retrying in {wait_duration} seconds for {remote_path}."
-                )
-                time.sleep(wait_duration)
-        try:
-            return self._download_fn(remote_path, local_path)
-        except Exception as e:
-            raise RuntimeError(
-                f"Unable to download {remote_path} after {self.max_retries} retries with error {str(e)} using {type(self)}."
-            ) from e
+        run_with_retries(
+            self._download_fn,
+            max_retries=self.max_retries,
+            args=(remote_path, local_path),
+            function_name=f"download {remote_path} using {type(self).__name__}",
+        )
 
     def _download_single_file(self, remote_path: str, dst_dir: str) -> str:
         """Download single remote file locally.
@@ -254,10 +247,9 @@ class S3Client(BaseClient):
         )
 
     def transfer_config(self) -> TransferConfig:
-        opts = self.opts
-        multi_part_threshold = getattr(opts, "common.s3.multipart_threshold")
+        multipart_chunksize = getattr(self.opts, "common.s3.multipart_chunksize")
         transfer_config = TransferConfig(
-            multipart_threshold=multi_part_threshold,
+            multipart_chunksize=multipart_chunksize,
             num_download_attempts=self.max_retries,
         )
         return transfer_config
@@ -285,14 +277,14 @@ class S3Client(BaseClient):
         """
 
         transfer_config = self.transfer_config()
-        boto_client = boto3.client(
+        self.boto_client = boto3.client(
             service_name="s3",
             endpoint_url=endpoint_url,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
         )
-        boto_transfer_client = S3Transfer(boto_client, transfer_config)
+        boto_transfer_client = S3Transfer(self.boto_client, transfer_config)
         return boto_transfer_client
 
     @classmethod
@@ -330,10 +322,10 @@ class S3Client(BaseClient):
             help="AWS session token. Defaults to None.",
         )
         group.add_argument(
-            "--common.s3.multipart-threshold",
+            "--common.s3.multipart-chunksize",
             type=str,
-            default=32 * 1024 * 1024,
-            help="The partition size of each part for a multipart transfer. Defaults to 32 MB.",
+            default=64 * 1024 * 1024,
+            help="The partition size of each part for a multipart transfer. Defaults to 64 MB.",
         )
 
         return parser

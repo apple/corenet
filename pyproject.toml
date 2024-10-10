@@ -7,5 +7,12 @@ extend-exclude = '.history'
 
 [tool.pytest.ini_options]
 junit_family = 'xunit2'
-addopts = '--junit-xml=./build/test-results/junit_reports/junit.xml'
+
+# Add-opts documentation:
+# "-p no:warnings" instructs pytest to avoid modifying warnings.filters, as we have a
+#   custom implementation for filtering warnings in corenet/__init__.py. In the CI, the
+#   unexpected warnings are automatically converted to errors by corenet/__init__.py.
+# "--junit-xml" generates execution metadata that is used for visualizing test results.
+addopts = '-p no:warnings --junit-xml=./build/test-results/junit_reports/junit.xml'
+
 markers = 'skip_ci: Mark a test to be skipped in CI to avoid known issues like download failure.'

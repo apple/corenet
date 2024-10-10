@@ -16,6 +16,7 @@ from corenet.data.transforms.base_transforms import BaseTransformation
 from corenet.data.transforms.common import Compose
 from corenet.data.video_reader import VIDEO_READER_REGISTRY, ffmpeg_utils
 from corenet.data.video_reader.base_av_reader import BaseAVReader
+from corenet.utils.check import check
 from corenet.utils.import_utils import ensure_library_is_available
 
 try:
@@ -45,6 +46,7 @@ class FFMPEGReader(BaseAVReader):
         video_fps: float = -1,
         custom_frame_transforms: Optional[BaseTransformation] = None,
         video_only: bool = False,
+        align_audio_video: bool = False,
         threads: int = 1,
         crop_w_h_x_y: Optional[Tuple[int, int, int, int]] = None,
         ffmpeg_loglevel: str = "error",
@@ -68,6 +70,8 @@ class FFMPEGReader(BaseAVReader):
                 rather then the default ``BaseAVReader.get_frame_transform()`` for
                 transforming individual frames. Defaults to None.
             video_only: When True, the audio stream gets skipped. Defaults to False.
+            align_audio_video: When True, the audio/video tensors will be trimmed to
+                ensure they are exactly the same temporal length.
             threads: Number of cpu threads to use for decoding and transforming the
                 video. Note that we don't have full control over ffmpeg, and some
                 ffmpeg components may ignore this flag. Defaults to 1.
@@ -106,14 +110,7 @@ class FFMPEGReader(BaseAVReader):
             )
 
         try:
-            video_metadata, extras = ffmpeg_utils.get_video_metadata(
-                filename, return_extras=True
-            )
-            if extras["rotation"] != 0:
-                raise NotImplementedError(
-                    "Reading videos with rotated frames"
-                    f" (rotation={extras['rotation']}) is not implemented yet."
-                )
+            video_metadata = ffmpeg_utils.get_video_metadata(filename)
 
             video = ffmpeg.input(
                 filename,
@@ -144,7 +141,6 @@ class FFMPEGReader(BaseAVReader):
             video = subprocess.run(
                 video.compile(),
                 capture_output=True,
-                # See https://github.com/kkroening/ffmpeg-python/issues/782
                 stdin=subprocess.DEVNULL,
             ).stdout
 
@@ -170,6 +166,22 @@ class FFMPEGReader(BaseAVReader):
                 audio, audio_metadata = self.read_audio(
                     filename, audio_sample_rate=audio_sample_rate, threads=threads
                 )
+
+                audio_sample_rate = audio_metadata["audio_fps"]
+
+                if align_audio_video:
+                    audio_samples_per_frame = audio_sample_rate / video_fps
+                    check(
+                        audio_samples_per_frame.is_integer(),
+                        lambda: f"Cannot align A/V: Audio sample rate {audio_sample_rate} is not divisible by video fps {video_fps}",
+                    )
+                    frames = min(
+                        video.shape[0],
+                        audio.shape[0] // int(audio_samples_per_frame),
+                    )
+                    video = video[:frames]
+                    audio = audio[: frames * int(audio_samples_per_frame)]
+
         except ffmpeg.Error as e:
             raise RuntimeError(e.stderr) from e
 
@@ -186,8 +198,9 @@ class FFMPEGReader(BaseAVReader):
             "audio": audio if not video_only else None,
             "video": video,
             "metadata": {
-                "audio_fps": audio_metadata["audio_fps"] if not video_only else None,
+                "audio_fps": audio_sample_rate if not video_only else None,
                 "video_fps": video_fps,
+                "video_frame_timestamps": torch.arange(video.shape[0]) / video_fps,
                 "filename": filename,
             },
         }

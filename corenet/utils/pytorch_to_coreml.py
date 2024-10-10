@@ -22,8 +22,8 @@ def convert_pytorch_to_coreml(
     pytorch_model: torch.nn.Module,
     jit_model_only: Optional[bool] = False,
     convert_to: str = "neuralnetwork",
-    *args,
-    **kwargs
+    minimum_deployment_target: Optional[ct.target] = None,
+    compute_precision: Optional[ct.precision] = None,
 ) -> Dict:
     """
     Convert Pytorch model to CoreML
@@ -33,6 +33,28 @@ def convert_pytorch_to_coreml(
         jit_model_only: If set, do not create the optimized or CoreML model.
         convert_to: If 'neuralnetwork', convert to espresso format. If 'mlpackage',
             convert to the MIL format.
+        minimum_deployment_target: The minimal version of the system  to converted model
+            supports on device.
+            The converter produces a neural network (neuralnetwork) if:
+
+                minimum_deployment_target <= coremltools.target.iOS14/
+                             coremltools.target.macOS11/
+                             coremltools.target.watchOS7/
+                             coremltools.target.tvOS14:
+            The converter produces an ML program (mlprogram) if:
+
+                minimum_deployment_target >= coremltools.target.iOS15/
+                              coremltools.target.macOS12/
+                              coremltools.target.watchOS8/
+                              coremltools.target.tvOS15:
+            If neither the minimum_deployment_target nor the convert_to parameter is
+            specified, the converter produces an ML program model type with as minimum
+            of a deployment target as possible.
+
+            If this parameter is specified and convert_to is also specified, they must
+            be compatible.
+
+        compute_precision: Precision of converted model.
 
     Returns:
         A dict containing the JIT model, the optimized model, and the CoreML model.
@@ -96,8 +118,10 @@ def convert_pytorch_to_coreml(
         coreml_model = ct.convert(
             model=jit_model,
             inputs=inputs,
-            convert_to=convert_to,
             outputs=outputs,
+            convert_to=convert_to,
+            minimum_deployment_target=minimum_deployment_target,
+            compute_precision=compute_precision,
         )
 
         if input_pil_img is not None:

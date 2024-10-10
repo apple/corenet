@@ -193,7 +193,12 @@ class Statistics(object):
             logger.log(summary_str)
             sys.stdout.flush()
 
-    def epoch_summary(self, epoch: int, stage: Optional[str] = "Training") -> None:
+    def epoch_summary(
+        self,
+        epoch: int,
+        stage: Optional[str] = "Training",
+        epoch_time: Optional[float] = None,
+    ) -> None:
         if self.is_master_node:
             metrics = self._compute_avg_statistics_all()
             metric_stats = self._avg_statistics_all(sep="=", metrics=metrics)
@@ -225,3 +230,11 @@ class Statistics(object):
                                 scalar_value,
                                 epoch,
                             )
+
+            if epoch_time is not None:
+                for log_writer in self.log_writers:
+                    log_writer.add_scalar(
+                        "{}/{}".format(s_stage, "Epoch_Time"),
+                        epoch_time,
+                        epoch,
+                    )

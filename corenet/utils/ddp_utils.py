@@ -4,6 +4,7 @@
 #
 
 import argparse
+import datetime
 import socket
 from typing import Optional
 
@@ -81,6 +82,7 @@ def distributed_init(opts) -> int:
         dist.init_process_group(
             backend=dist_backend,
             init_method=ddp_url,
+            timeout=datetime.timedelta(seconds=3600),
             world_size=world_size,
             rank=node_rank,
         )

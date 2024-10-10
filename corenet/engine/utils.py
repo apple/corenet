@@ -4,7 +4,9 @@
 #
 import argparse
 import os
-from typing import Dict, List, Optional, Union
+from collections.abc import MutableMapping
+from numbers import Number
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 from torch import Tensor
@@ -73,6 +75,58 @@ def log_metrics(
     log_writer.add_scalar("Common/Best Metric", round(best_metric, 2), epoch)
 
 
+def flatten(
+    dictionary: dict[str, Any], parent_key: str = "", separator: str = "/"
+) -> Dict:
+    """
+    Flatten a nested dictionary recursively.
+
+    Args:
+        dictionary: The dictionary to flatten.
+        parent_key: The key of this dictionary's parent.
+        separator: The separator to put between parent keys
+            and child keys.
+
+    Returns:
+        The flattened dictionary.
+    """
+    items = []
+    for key, value in dictionary.items():
+        new_key = parent_key + separator + key if parent_key else key
+        if isinstance(value, MutableMapping):
+            items.extend(flatten(value, new_key, separator=separator).items())
+        else:
+            items.append((new_key, value))
+    return dict(items)
+
+
+def step_log_metrics(
+    lrs: Union[List, float],
+    log_writer: Any,
+    step: int,
+    metrics: Dict[str, Any],
+) -> None:
+    """
+    Log metrics for the current step of training/evaluation.
+
+    Args:
+        lrs: The learning rates.
+        log_writer: The log_writer object to use for logging.
+        step: The current step of training.
+        metrics: A dictionary containing metrics to log.
+    """
+    if not isinstance(lrs, list):
+        lrs = [lrs]
+    for g_id, lr_val in enumerate(lrs):
+        log_writer.add_scalar("LR/Group-{}".format(g_id), round(lr_val, 6), step)
+    if metrics is not None:
+        flattened_metrics = flatten(metrics)
+        for metric_name, metric_value in flattened_metrics.items():
+            if not (isinstance(metric_value, Number) or metric_value):
+                continue
+            log_writer.add_scalar(metric_name, metric_value, step)
+
+
 def get_log_writers(opts: argparse.Namespace, save_location: Optional[str]):
     is_master_node = is_master(opts)
 
@@ -84,7 +138,7 @@ def get_log_writers(opts: argparse.Namespace, save_location: Optional[str]):
     if tensorboard_logging and save_location is not None:
         try:
             from torch.utils.tensorboard import SummaryWriter
-        except ImportError as e:
+        except ImportError:
             logger.log(
                 "Unable to import SummaryWriter from torch.utils.tensorboard. Disabling tensorboard logging"
             )

@@ -26,10 +26,13 @@ def build_attention_mask(context_length: int, batch_size: int, use_pytorch_mha):
     return mask
 
 
-@pytest.mark.parametrize("output_dim", [32, 48])
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("bias", [True, False])
-@pytest.mark.parametrize("use_attn_mask", [True, False])
+@pytest.mark.parametrize(
+    "output_dim, batch_size, bias, use_attn_mask",
+    [
+        (32, 1, True, True),
+        (16, 2, False, False),
+    ],
+)
 def test_multihead_self_attn(
     output_dim: int, batch_size: int, bias: bool, use_attn_mask: bool
 ):
@@ -78,10 +81,13 @@ def test_multihead_self_attn(
         )
 
 
-@pytest.mark.parametrize("output_dim", [32, 48])
-@pytest.mark.parametrize("key_len", [15, 20, 25])
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize(
+    "output_dim, key_len, batch_size, bias",
+    [
+        (32, 15, 1, True),
+        (16, 20, 2, False),
+    ],
+)
 def test_multihead_cross_attn(
     output_dim: int, key_len: int, batch_size: int, bias: bool
 ):

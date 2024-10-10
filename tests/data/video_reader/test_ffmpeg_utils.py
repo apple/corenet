@@ -15,8 +15,14 @@ from corenet.data.transforms.common import BaseTransformation, Identity
 from corenet.data.video_reader.ffmpeg_reader import FFMPEGReader
 from corenet.data.video_reader.ffmpeg_utils import (
     IS_FFMPEG_INSTALLED,
+    FFMPEGError,
+    ffmpeg,
+    ffprobe,
     get_flags_to_replicate_audio_codec,
+    get_video_metadata,
     transform_video_file,
+    write_audio,
+    write_video,
 )
 from tests.configs import get_config
 
@@ -85,6 +91,33 @@ def test_transform_video_with_trimming(tmp_path: Path):
     assert_video_data_is_close(actual=output_data, expected=expected_data)
 
 
+def test_transform_video_with_fps(tmp_path: Path):
+    if not IS_FFMPEG_INSTALLED:
+        pytest.skip("FFmpeg (optional dependncy) is not installed.")
+    opts = get_config()
+    input_path = "./tests/data/dummy_video.mov"
+    output_path = str(tmp_path / "output.mov")
+    transform_video_file(
+        input_filename=input_path,
+        output_filename=output_path,
+        transform=Identity(opts),
+        video_fps=8,
+        encoder_flags={
+            # Audio codec should be specified when trimming.
+            **get_flags_to_replicate_audio_codec(input_path),
+            # Use highest possible quality so that we can compare the results.
+            "q:a": 0,
+            "q:v": 0,
+        },
+    )
+
+    import os
+
+    print("test ", output_path, os.path.exists(output_path))
+    metadata = get_video_metadata(output_path)
+    assert metadata["video_fps"] == 8
+
+
 class SmallCrop(BaseTransformation):
     CROP_SIZE = 7, 9
 
@@ -143,3 +176,50 @@ def test_transform_video_file(
     )["samples"]
 
     assert_video_data_is_close(actual=output_data, expected=expected_data)
+
+
+def test_error_message() -> None:
+    with pytest.raises(FFMPEGError, match="Could not extract ffmpeg metadata for"):
+        ffprobe("/invalid/path")
+
+    with pytest.raises(FFMPEGError, match="use a standard extension for the filename"):
+        transform_video_file(
+            "./tests/data/dummy_video.mov",
+            "/invalid/path",
+            transform=lambda x: x,
+        )
+
+
+def test_ffprobe() -> None:
+    """
+    Checks that our implementation of ffprobe is consistent with ffmpeg-python library.
+    """
+    if not IS_FFMPEG_INSTALLED:
+        pytest.skip("FFmpeg (optional dependency) is not installed.")
+
+    our_output = ffprobe("./tests/data/dummy_video.mov")
+    library_output = ffmpeg.probe("./tests/data/dummy_video.mov")
+    assert our_output == library_output
+
+
+def test_write_video_and_audio(
+    tmp_path: Path,
+):
+    if not IS_FFMPEG_INSTALLED:
+        pytest.skip("FFmpeg (optional dependncy) is not installed.")
+    opts = get_config()
+
+    video_data = {
+        "audio": torch.linspace(0.0, 2000.0, 32000).sin()[:, None],
+        "video": torch.rand(30, 3, 1, 1).repeat(1, 1, 128, 128),
+        "metadata": {"audio_fps": 16000, "video_fps": 15},
+    }
+
+    output_path = str(tmp_path / "output.mkv")
+    write_video(video_data, output_path)
+
+    saved_data = FFMPEGReader(opts).read_video(output_path)
+    assert_video_data_is_close(actual=saved_data, expected=video_data)
+
+    # Make sure we can write audio too
+    write_audio(video_data, str(tmp_path / "output.wav"))

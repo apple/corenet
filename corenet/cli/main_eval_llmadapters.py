@@ -10,7 +10,7 @@ collectively called "CommonSense 170k" in LLM-Adapters <https://arxiv.org/abs/23
 Code is adapted from https://github.com/AGI-Edgerunners/LLM-Adapters
 
 In addition to the generation-style evaluation used by LLM-Adapters, we add a
-multiple-choice-style evaluation. This massively improves results for small 
+multiple-choice-style evaluation. This massively improves results for small
 models.
 
 Currently, this only supports the LLama tokenizer. We may add support for
@@ -29,6 +29,7 @@ import numpy as np
 from tqdm import tqdm
 
 from corenet.data.datasets.language_modeling import commonsense_170k
+from corenet.data.text_tokenizer import build_tokenizer
 
 # Needs to be imported in a special way due to the hyphenated name.
 try:
@@ -38,16 +39,12 @@ except:
 import argparse
 import json
 import re
-import time
-from ast import arg
-from pathlib import Path
 from typing import List, Optional, Tuple
 
 import torch
 
-from corenet.modeling.models import get_model
 from corenet.options.opts import get_lm_eval_arguments
-from corenet.utils import logger
+from corenet.utils import hf_adapter_utils, logger
 from corenet.utils.download_utils import get_local_path
 
 try:
@@ -58,162 +55,11 @@ except:
     HFLM = object
 
 try:
-    from transformers import (
-        AutoTokenizer,
-        GenerationConfig,
-        LlamaTokenizer,
-        PretrainedConfig,
-        PreTrainedModel,
-    )
-    from transformers.modeling_outputs import CausalLMOutputWithPast
+    from transformers import AutoTokenizer, GenerationConfig, LlamaTokenizer
 except ModuleNotFoundError as mnfe:
     LlamaTokenizer = None
-    PretrainedConfig = object
-    PreTrainedModel = object
     AutoTokenizer = None
     GenerationConfig = None
-    CausalLMOutputWithPast = None
-
-
-class _CorenetToHFPretrainedConfig(PretrainedConfig):
-    """
-    An adapter to build a CoreNet config that inherits from
-    PreTrainedConfig.
-
-    Mainly used for adaptation to 3rd party code.
-
-    Args:
-        kwargs: Arguments to pass to PretrainedConfig.
-    """
-
-    model_type = "causal_lm"
-
-    def __init__(self, **kwargs: Dict[str, Any]) -> None:
-        super().__init__(**kwargs)
-
-
-class _CorenetToHFPretrainedModel(PreTrainedModel):
-    """
-    An adapter to build a CoreNet model that inherits from
-    PreTrainedModel.
-
-    Mainly used for adaptation to 3rd party code.
-
-    Args:
-        config: The _CorenetToHFPretrainedConfig
-            that defines the model. This essentially
-            contains the standard CoreNet model arguments.
-        vocab_size: The vocabulary size.
-    """
-
-    config_class = _CorenetToHFPretrainedConfig
-
-    def __init__(self, config: _CorenetToHFPretrainedConfig, vocab_size: int) -> None:
-        super().__init__(config)
-        opts = argparse.Namespace(**vars(config))
-
-        model = get_model(opts)
-        model.eval()
-
-        self.lm_head = None
-        self.model = model
-        self.vocab_size = vocab_size
-        self.post_init()
-
-    def forward(
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[List[torch.Tensor]] = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-        token_type_ids: Optional[torch.LongTensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        head_mask: Optional[torch.FloatTensor] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
-        encoder_attention_mask: Optional[torch.FloatTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-    ) -> CausalLMOutputWithPast:
-        """
-        The forward function to compute model outputs.
-
-        Note, many arguments are not supported, and are only
-        present due to inheritance. Additionally, the model is
-        assumed to use causal attention.
-
-        Args:
-            input_ids: The input token ids.
-            past_key_values: The key-value cache.
-            attention_mask: Unused.
-            token_type_ids: Unused.
-            position_ids: Unused.
-            head_mask: Unused.
-            inputs_embeds: Unused.
-            encoder_hidden_states: Unused.
-            encoder_attention_mask: Unused.
-            use_cache: Unused.
-            output_attentions: Unused.
-            output_hidden_states: Unused.
-            return_dict: Unused.
-        """
-        assert token_type_ids is None
-        assert position_ids is None
-        assert head_mask is None
-        assert inputs_embeds is None
-        assert encoder_hidden_states is None
-        assert encoder_attention_mask is None
-        assert not use_cache
-        assert not output_attentions
-        assert not output_hidden_states
-        assert return_dict is None or return_dict
-
-        model_outputs = self.model(input_ids)
-        if isinstance(model_outputs, dict):
-            logits = model_outputs["logits"]
-            past_key_values = model_outputs["past_key_values"]
-        elif isinstance(model_outputs, torch.Tensor):
-            logits = model_outputs
-            past_key_values = None
-
-        # We may have added extra tokens in the LM classifier to make training faster. Remove such tokens
-        logits = logits[..., : self.vocab_size]
-
-        return CausalLMOutputWithPast(
-            logits=logits,
-            past_key_values=past_key_values,
-        )
-
-    def prepare_inputs_for_generation(
-        self,
-        input_ids: torch.Tensor,
-        past_key_values: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
-        use_cache: bool = False,
-        attention_mask: Optional[torch.Tensor] = None,
-    ):
-        """
-        Prepare inputs to be passed to the model by building a dictionary of
-        arguments from the inputs.
-
-        Args:
-            input_ids: The input ids.
-            past_key_values: The key-value cache.
-            use_cache: If set, use the key-value cache.
-            attention_mask: The attention mask to use in attention layers.
-        """
-        if past_key_values is not None:
-            # All tokens except the last token were processed in the previous time step.
-            # so, we do not need to process them again.
-            input_ids = input_ids[:, -1:]
-
-        model_inputs = {
-            "input_ids": input_ids,
-            "past_key_values": past_key_values,
-            "use_cache": use_cache,
-            "attention_mask": attention_mask,
-        }
-        return model_inputs
 
 
 class CoreNetLMEvalWrapper(HFLM):
@@ -227,19 +73,23 @@ class CoreNetLMEvalWrapper(HFLM):
     def __init__(self, opts: argparse.Namespace) -> None:
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        hf_config = _CorenetToHFPretrainedConfig(**vars(opts))
+        hf_config = hf_adapter_utils.CorenetToHFPretrainedConfig(**vars(opts))
         tokenizer_path = getattr(opts, f"text_tokenizer.sentence_piece.model_path")
         tokenizer_path = get_local_path(opts, tokenizer_path)
         # Currently, we only support LLamaTokenizer for this evaluation.
         hf_tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
         vocab_size = hf_tokenizer.vocab_size
-        hf_model = _CorenetToHFPretrainedModel(hf_config, vocab_size)
+        hf_model = hf_adapter_utils.CorenetToHFPretrainedModel(hf_config, vocab_size)
         hf_model.to(device=device)
+        # To ensure padding and batching don't cause issues, for now we only support
+        # a batch_size of 1. In some cases, our code handles position ids differently
+        # than other codebases, so we are extra cautious.
+        batch_size = 1
 
         super().__init__(
             pretrained=hf_model,
             tokenizer=hf_tokenizer,
-            batch_size=getattr(opts, "dataset.val_batch_size0"),
+            batch_size=batch_size,
             max_length=getattr(opts, "dataset.language_modeling.sequence_length"),
             trust_remote_code=True,
             add_bos_token=getattr(opts, "lm_eval_wrapper.add_sot_token"),
@@ -604,7 +454,7 @@ def get_loglikelihood_inputs(data: Dict[str, str]) -> List[Request]:
         possible_answers = ["true", "false"]
     else:
         for word in ["answer", "ending", "option", "solution"]:
-            if re.match(f".*Answer format: .*{word}(\d)$", instruction_end):
+            if re.match(rf".*Answer format: .*{word}(\d)$", instruction_end):
                 num_answers = int(instruction_end[-1])
                 possible_answers = [f"{word}{num}" for num in range(1, num_answers + 1)]
 

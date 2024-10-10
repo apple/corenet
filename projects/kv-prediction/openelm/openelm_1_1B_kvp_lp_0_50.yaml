@@ -1,0 +1,146 @@
+# pytest: disable
+
+taskname: '+ [KV Prediction Base OpenELM-1.1B Aux OpenELM-1.1B-0.50l]'
+
+_anchor_context_length: &_anchor_context_length 2048
+# actual vocab size is 32001 after adding padding token, so we add few extra tokens to make it more hardware friendly
+# for classification layer in LM model
+_anchor_vocab_size: &_anchor_vocab_size 32128
+_anchor_padding_index: &_anchor_padding_index 32000
+_anchor_forward_dtype: &_anchor_forward_dtype "bfloat16"
+_anchor_backward_dtype: &_anchor_backward_dtype "float32"
+
+common:
+  run_label: "train"
+  log_freq: 500
+  auto_resume: true
+  grad_clip: 1.0
+  save_all_checkpoints: true
+  save_interval_freq: 5000
+  eval_every_k_iterations: 10000
+  mixed_precision: true
+  mixed_precision_dtype: "bfloat16"
+  accum_freq: 2
+
+dataset:
+  root_train: ""
+  disable_val: true
+  # effective batch size is ~2M tokens (16 sequences x 8 A100 80 GB GPUs x 8 nodes x 2048 tokens per seq )
+  # we use more nodes here because FSDP is not used.
+  #train_batch_size0: 16
+  train_batch_size0: 8
+  workers: 4
+  persistent_workers: true
+  pin_memory: true
+
+  # dataset details
+  category: "language_modeling"
+  name: "general_lm"
+  language_modeling:
+    sequence_length: *_anchor_context_length
+    # filter text that have less than 256 tokens after tokenization to avoid excessive padding
+    min_tokens_per_text: 256
+    # filter text that have less than 200 characters before tokenization
+    min_characters_per_text: 200
+    shuffle_data: true
+    general_lm:
+      train_data_info: [
+        {
+        # Uncomment below line and add path to parquet, jsonl, and json.gz files from pre-training corpora.
+        # We expect the path to be of the form "/path/to/train-{file_id:05d}-05534.parquet
+          # "file_name": PATH_TO_PARQUET_FILES.
+          "text_key": "content",
+          "file_id_range": [0, 5535],
+        },
+      ]
+
+text_tokenizer:
+  name: "sentence_piece"
+  sentence_piece:
+    enable_nfc_normalization: true
+    append_sot_token: true
+    append_eot_token: true
+    # Uncomment the below line and update the path of LLAMA SentencePiece model file
+    # model_path: <PATH_OF_LLAMA_SPM_MODEL>
+
+
+loss:
+  category: "language_modeling"
+  language_modeling:
+    name: "cross_entropy_for_kv_prediction"
+    cross_entropy_for_kv_prediction:
+      ignore_index: *_anchor_padding_index
+      use_z_loss: true
+      auxiliary_loss: 1
+      kv_loss: 1
+
+optim:
+  name: "adamw"
+  weight_decay: 0.1
+  no_decay_bn_filter_bias: true
+  adamw:
+    beta1: 0.9
+    beta2: 0.95
+    eps: 1.e-8
+
+scheduler:
+  is_iteration_based: true
+  # Train for about 140-150B tokens
+  max_iterations: 70000
+  name: cosine
+  warmup_init_lr: 1.e-06
+  warmup_iterations: 5000
+  cosine:
+    # This value should be the actual lr divided by the number of nodes.
+    max_lr: 0.0012
+    # papers use min_lr= 0.1 x max_lr
+    min_lr: 0.00012
+
+model:
+  activation_checkpointing: true
+  freeze_modules: ["base.*"]
+  language_modeling:
+    name: "kv_prediction"
+    kv_prediction:
+      auxkv_num_layers_to_basekv_num_layers: [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13]
+      base_model:
+       - model:
+          language_modeling:
+            name: "general_gpt"
+            pretrained: "https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/pretrained/1.1B/checkpoint_average.pt"
+            general_gpt:
+              model_name: "OpenELM-1_1B"
+      auxiliary_model:
+       - model:
+          language_modeling:
+            name: "layer_pruned_general_gpt"
+            pretrained: "https://docs-assets.developer.apple.com/ml-research/models/corenet/v0.1.0/openelm/pretrained/1.1B/checkpoint_average.pt"
+            general_gpt:
+              model_name: "OpenELM-1_1B-0.50l"
+          rename_scopes_map:
+            - ["layers\\.2\\.", "layers.1."]
+            - ["layers\\.4\\.", "layers.2."]
+            - ["layers\\.6\\.", "layers.3."]
+            - ["layers\\.8\\.", "layers.4."]
+            - ["layers\\.10\\.", "layers.5."]
+            - ["layers\\.12\\.", "layers.6."]
+            - ["layers\\.14\\.", "layers.7."]
+            - ["layers\\.16\\.", "layers.8."]
+            - ["layers\\.18\\.", "layers.9."]
+            - ["layers\\.20\\.", "layers.10."]
+            - ["layers\\.22\\.", "layers.11."]
+            - ["layers\\.24\\.", "layers.12."]
+            - ["layers\\.26\\.", "layers.13."]
+          # Note: exclude_scopes happens first, before renaming.
+          resume_exclude_scopes: ["layers\\.1\\.", "layers\\.3\\.", "layers\\.5\\.", "layers\\.7\\.", "layers\\.9\\.", "layers\\.11\\.", "layers\\.13\\.", "layers\\.15\\.", "layers\\.17\\.", "layers\\.19\\.", "layers\\.21\\.", "layers\\.23\\.", "layers\\.25\\.", "layers\\.27\\."]
+    general_gpt:
+      model_name: "OpenELM-1_1B"
+      vocab_size: *_anchor_vocab_size
+      max_context_length: *_anchor_context_length
+      padding_index: *_anchor_padding_index
+
+stats:
+  val: [ "loss"]
+  train: ["loss"]
+  checkpoint_metric: "loss.total_loss"
+  checkpoint_metric_max: false

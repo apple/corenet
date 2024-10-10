@@ -148,14 +148,13 @@ class Registry:
             name = "{}{}{}".format(type, self.separator, name)
 
         if self.arguments_accessed:
-            # TODO: do we really want an error here?
-            logger.error(
+            logger.warning(
                 f"Found item `{name}` being registered after all_item_arguments"
                 f" was called for `{self.registry_name}` registry."
             )
 
         def register_with_name(item: RegistryItem) -> RegistryItem:
-            if name in self.registry:
+            if item is not self.registry.get(name, item):
                 raise ValueError(
                     "Cannot register duplicate {} ({})".format(self.registry_name, name)
                 )

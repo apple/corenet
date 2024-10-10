@@ -4,8 +4,11 @@
 #
 
 import argparse
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Union
 
+import coremltools as ct
+
+from corenet.constants import DEFAULT_LOGS_DIR, DEFAULT_RESULTS_DIR
 from corenet.data.collate_fns import arguments_collate_fn
 from corenet.data.datasets import arguments_dataset
 from corenet.data.io.transfer_clients import transfer_client_arguments
@@ -89,8 +92,14 @@ def arguments_common(parser: argparse.ArgumentParser) -> argparse.ArgumentParser
     group.add_argument(
         "--common.results-loc",
         type=str,
-        default="results",
-        help="Directory where results will be stored",
+        default=DEFAULT_RESULTS_DIR,
+        help=f"Directory where results will be stored. Defaults to {DEFAULT_RESULTS_DIR}.",
+    )
+    group.add_argument(
+        "--common.logs-loc",
+        type=str,
+        default=DEFAULT_LOGS_DIR,
+        help=f"Directory where logs will be stored. Defaults to {DEFAULT_LOGS_DIR}.",
     )
     group.add_argument(
         "--common.run-label",
@@ -306,7 +315,7 @@ def arguments_train_eval_pipeline(
     return parser
 
 
-def arguments_lm_eval(parser) -> argparse.ArgumentParser:
+def arguments_lm_eval(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """
     Add arguments related to 3rd party LM evaluation.
 
@@ -367,6 +376,12 @@ def arguments_lm_eval(parser) -> argparse.ArgumentParser:
         help="Directory that contains the datasets on which to evaluate.",
         default="LLM-Adapters/dataset/",
     )
+    group.add_argument(
+        "--lm-harness-evaluation.tasks-info",
+        type=JsonValidator,
+        help="Task dictionary for LM Harness evaluation.",
+        default=None,
+    )
 
     return parser
 
@@ -379,8 +394,27 @@ def parser_to_opts(parser: argparse.ArgumentParser, args: Optional[List[str]] = 
 
 
 def get_training_arguments(
-    parse_args: Optional[bool] = True, args: Optional[List[str]] = None
-):
+    args: Optional[List[str]] = None,
+    parse_args: bool = True,
+    add_arguments: Optional[
+        Callable[[argparse.ArgumentParser], argparse.ArgumentParser]
+    ] = None,
+) -> Union[argparse.ArgumentParser, argparse.Namespace]:
+    """Adds the CoreNet training arguments to the argument parser.
+
+    Args:
+        args: If provided, argparser ignores the CLI arguments and parses the given
+            list. Defaults to None, that parses CLI arguments from `sys.argv`.
+        parse_args: If true, parses the arguments. Otherwise, just creates the parser.
+            Defaults to True.
+        add_arguments: If provided, wraps the argument parser to modify the parser or
+            to add additional arguments dynamically. Useful for entrypoint-specific
+            arguments. Defaults to None.
+
+    Returns:
+        By default, returns the `opts` config object. If parse_args=True is passed,
+        returns the argument parser.
+    """
     parser = argparse.ArgumentParser(description="Training arguments", add_help=True)
 
     # transfer client related arguments
@@ -429,6 +463,9 @@ def get_training_arguments(
 
     parser = arguments_train_eval_pipeline(parser=parser)
 
+    if add_arguments is not None:
+        parser = add_arguments(parser)
+
     if parse_args:
         return parser_to_opts(parser, args)
     else:
@@ -466,6 +503,21 @@ def get_conversion_arguments(args: Optional[List[str]] = None):
         type=str,
         default=None,
         help="Path of the image to be used for conversion",
+    )
+
+    group.add_argument(
+        "--conversion.minimum-deployment-target",
+        type=str,
+        default=None,
+        choices=list([target.name for target in ct.target]),
+        help="A member of the coremltools.target enum. Defaults to None",
+    )
+    group.add_argument(
+        "--conversion.compute-precision",
+        type=str,
+        default=None,
+        choices=list([precision.name for precision in ct.precision]),
+        help="A member of the coremltools.precision enum. Defaults to None",
     )
 
     # Arguments related to server.

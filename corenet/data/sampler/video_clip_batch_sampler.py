@@ -4,12 +4,14 @@
 #
 
 import argparse
+import math
 import random
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 
 from corenet.data.sampler import SAMPLER_REGISTRY
+from corenet.data.sampler.base_sampler import BaseSampler, BaseSamplerDDP
 from corenet.data.sampler.variable_batch_sampler import (
     VariableBatchSampler,
     VariableBatchSamplerDDP,
@@ -98,15 +100,15 @@ class VideoClipBatchSampler(VariableBatchSampler):
         )
         group.add_argument(
             "--sampler.vcbs.num-clips-per-second-train",
-            type=int,
-            default=1,
+            type=float,
+            default=1.0,
             help="The number of clips per second for training, default to 1. This is"
             " used to determine the frequency to sample.",
         )
         group.add_argument(
             "--sampler.vcbs.num-clips-per-second-val",
-            type=int,
-            default=4,
+            type=float,
+            default=4.0,
             help="The number of clips per second for validation, default to 4. This is"
             "used to determine the frequency to sample.",
         )
@@ -133,7 +135,7 @@ class VideoClipBatchSampler(VariableBatchSampler):
         is_training: Optional[bool] = False,
         get_item_metadata: Optional[Callable[[int], Dict]] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(
             opts=opts, n_data_samples=n_data_samples, is_training=is_training
@@ -168,7 +170,7 @@ class VideoClipBatchSampler(VariableBatchSampler):
             self.frame_rate_scales = [1.0]
             self.num_samples_per_clip = 1
 
-    def __iter__(self) -> List:
+    def __iter__(self) -> Iterator[List]:
         indices = self.get_indices()
         start_index = 0
         n_samples = len(indices)
@@ -176,6 +178,9 @@ class VideoClipBatchSampler(VariableBatchSampler):
             crop_h, crop_w, batch_size = random.choice(self.img_batch_tuples)
             h_scale = crop_h / self.crop_size_h
             w_scale = crop_w / self.crop_size_w
+            max_num_clips_per_batch = int(
+                self.max_num_clips_per_batch / (h_scale * w_scale)
+            )
             fps_scale = random.choice(self.frame_rate_scales)
             video_fps = int(self.video_fps * fps_scale)
             audio_fps = int(self.audio_fps * fps_scale)
@@ -195,7 +200,7 @@ class VideoClipBatchSampler(VariableBatchSampler):
                     if self.is_training
                     else self.num_clips_per_second_val
                 )
-                metadata = self.get_item_metadata(self.img_indices[end_index])
+                metadata = self.get_item_metadata(indices[end_index])
                 if num_clips_per_second > 0:
                     num_clips = max(
                         1,
@@ -207,11 +212,13 @@ class VideoClipBatchSampler(VariableBatchSampler):
                         metadata["total_video_frames"]
                         - clip_duration * metadata["video_fps"]
                     )
-                num_batch_clips.append(num_clips)
-                sum_batch_clips += num_clips * h_scale * w_scale
-                end_index += 1
-                if sum_batch_clips > self.max_num_clips_per_batch:
+
+                num_clips = min(num_clips, max_num_clips_per_batch)
+                sum_batch_clips += num_clips
+                if sum_batch_clips > max_num_clips_per_batch:
                     break
+                num_batch_clips.append(num_clips)
+                end_index += 1
 
             video_ids = indices[start_index:end_index]
             start_index += len(video_ids)
@@ -250,133 +257,48 @@ class VideoClipBatchSampler(VariableBatchSampler):
 
 
 @SAMPLER_REGISTRY.register(name="video_clip_batch_sampler_ddp")
-class VideoClipBatchSamplerDDP(VariableBatchSamplerDDP):
-    """Batch sampler for videos.
+class VideoClipBatchSamplerDDP(BaseSamplerDDP):
+    """Wraps the VideoClipBatchSampler to make it work with DDP.
 
-    Args:
-        opts: Command line argument.
-        n_data_samples: Number of samples in the dataset.
-        is_training: Training or validation mode. Default: False.
-        get_item_metadata: A callable that provides sample metadata, given sample index.
+    This is needed for because we do not know how long the epoch will be, and
+    it is imperative that all replicas take the same number of steps.
+
+    This approach could be used to adapt any non DDP sampler.
     """
 
     def __init__(
         self,
-        opts,
-        n_data_samples: int,
-        is_training: Optional[bool] = False,
-        get_item_metadata: Optional[Callable[[int], Dict]] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
-        super().__init__(
-            opts=opts, n_data_samples=n_data_samples, is_training=is_training
-        )
-        self.default_frames = getattr(opts, "sampler.vcbs.num_frames_per_clip")
-        self.video_fps = getattr(opts, "sampler.vcbs.video_fps")
-        self.audio_fps = getattr(opts, "sampler.vcbs.audio_fps")
-        self.min_fps_scale = getattr(opts, "sampler.vcbs.min_clip_fps_scale")
-        self.max_fps_scale = getattr(opts, "sampler.vcbs.max_clip_fps_scale")
-        self.num_fps_scale = getattr(opts, "sampler.vcbs.video_fps_num_scales")
-        self.num_samples_per_clip = getattr(opts, "sampler.vcbs.num_samples_per_clip")
-        self.num_clips_per_second_train = getattr(
-            opts, "sampler.vcbs.num_clips_per_second_train"
-        )
-        self.num_clips_per_second_val = getattr(
-            opts, "sampler.vcbs.num_clips_per_second_val"
-        )
-        self.max_num_clips_per_batch = getattr(
-            opts, "sampler.vcbs.max_num_clips_per_batch"
-        )
-        self.is_training = is_training
-        self.get_item_metadata = get_item_metadata
+        self.inner = VideoClipBatchSampler(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-        if is_training:
-            frame_rate_scales = np.linspace(
-                self.min_fps_scale,
-                self.max_fps_scale,
-                self.num_fps_scale,
-            )
-            self.frame_rate_scales = list(set(frame_rate_scales) | {1})
-        else:
-            self.frame_rate_scales = [1.0]
-
-    def __iter__(self) -> List:
-        indices = self.get_indices_rank_i()
-        start_index = 0
-        n_samples = len(indices)
-        while start_index < n_samples:
-            crop_h, crop_w, batch_size = random.choice(self.img_batch_tuples)
-            h_scale = crop_h / self.crop_size_h
-            w_scale = crop_w / self.crop_size_w
-            fps_scale = random.choice(self.frame_rate_scales)
-            video_fps = int(self.video_fps * fps_scale)
-            audio_fps = int(self.audio_fps * fps_scale)
-
-            # Find the maximal batch size to contain no more than
-            # `self.max_num_clips_per_batch` clips.
-            batch_end_index = min(start_index + batch_size, n_samples)
-            end_index = start_index
-            sum_batch_clips = 0
-            num_batch_clips = []
-            while end_index < batch_end_index:
-                # Computed the weighted number of clips in the batch, taking video
-                # length, image size into account to make sure the batch fits into the
-                # memory.
-                num_clips_per_second = (
-                    self.num_clips_per_second_train
-                    if self.is_training
-                    else self.num_clips_per_second_val
-                )
-                metadata = self.get_item_metadata(self.img_indices[end_index])
-                if num_clips_per_second > 0:
-                    num_clips = max(
-                        1,
-                        int(metadata["video_duration"] * num_clips_per_second),
-                    )
-                else:
-                    clip_duration = self.default_frames / self.video_fps
-                    num_clips = int(
-                        metadata["total_video_frames"]
-                        - clip_duration * metadata["video_fps"]
-                    )
-                num_batch_clips.append(num_clips)
-                sum_batch_clips += num_clips * h_scale * w_scale
-                end_index += 1
-                if sum_batch_clips > self.max_num_clips_per_batch:
+    def __iter__(self) -> Iterator[List]:
+        """Returns VideoClipBatchSampler samples divided up between DDP nodes."""
+        batches = list(self.inner)
+        while len(batches) % self.num_replicas != 0:
+            for batch in reversed(batches):
+                if len(batch) > 1:
+                    batches.append([batch.pop()])
                     break
-
-            video_ids = indices[start_index:end_index]
-            start_index += len(video_ids)
-
-            if len(video_ids) > 0:
-                batch = [
-                    (
-                        crop_h,
-                        crop_w,
-                        video_id,
-                        self.default_frames,
-                        num_batch_clips[i],
-                        video_fps,
-                        audio_fps,
-                        self.num_samples_per_clip,
-                    )
-                    for i, video_id in enumerate(video_ids)
-                ]
-                yield batch
             else:
-                logger.warning("No data in the current batch.")
+                batches.pop()
+        for i in range(self.rank, len(batches), self.num_replicas):
+            yield batches[i]
 
-    def __repr__(self) -> str:
-        repr_str = "{}(".format(self.__class__.__name__)
-        repr_str += "\n \t base_im_size=(h={}, w={})\n \t base_batch_size={}\n \t video_fps={}\n \taudio_fps={}\n \tn_frames={}".format(
-            self.crop_size_h,
-            self.crop_size_w,
-            self.batch_size_gpu0,
-            self.video_fps,
-            self.audio_fps,
-            self.default_frames,
-        )
-        repr_str += self.extra_repr()
-        repr_str += "\n)"
-        return repr_str
+    def __len__(self) -> int:
+        return int(math.ceil(len(self.inner) / self.num_replicas))
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = epoch
+        self.inner.set_epoch(epoch)
+
+    def update_scales(self, *args, **kwargs) -> None:
+        return self.inner.update_scales(*args, **kwargs)
+
+    def update_indices(self, new_indices: List[int]) -> None:
+        return self.inner.update_indices(*args, **kwargs)
+
+    def extra_repr(self) -> str:
+        return self.inner.extra_repr()

@@ -5,7 +5,7 @@
 
 import argparse
 import functools
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from numbers import Number
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
@@ -322,6 +322,9 @@ class MultiHeadCausalAttention(nn.Module):
         past_values: Optional[Tensor] = None,
         use_kv_cache: bool = False,
         is_causal: bool = True,
+        concat_kvs: bool = True,
+        apply_k_norm_to_past_keys_before_cache_write: bool = False,
+        apply_k_norm_before_cache_write: bool = True,
     ) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
         """
         Forward pass of multi-head self-attention.
@@ -333,6 +336,15 @@ class MultiHeadCausalAttention(nn.Module):
             past_values: Tensor storing the cached values. The shape of the tensor is the same as 'past_keys'.
             use_kv_cache: Cache the output of key and value projection layers for faster inference.
             is_causal: Specifies whether to apply causal masking in scaled dot-product attention.
+            concat_kvs: If set, the keys produced by the QKV projection will be concatenated
+                with the past keys. Usually this value should be True, but it needs to be False
+                for KV Prediction experiments.
+            apply_k_norm_to_past_keys_before_cache_write: If set, apply the key norm to past keys
+                before updating the KV cache. This usually should be False, but is set to True
+                for KV prediction experiments.
+            apply_k_norm_before_cache_write: If set, apply the key norm to the current keys
+                before concatenating them with the past keys. This usually should be True, but
+                is set to False for KV prediction experiments.
 
         Returns:
             The output of the same shape as the input, optionally with a tensor containing cached keys and values.
@@ -358,18 +370,38 @@ class MultiHeadCausalAttention(nn.Module):
         if self.q_norm is not None:
             queries = self.q_norm(queries)
 
-        if self.k_norm is not None:
+        if self.k_norm is not None and apply_k_norm_before_cache_write:
             keys = self.k_norm(keys)
+
+        if (
+            self.k_norm is not None
+            and past_keys is not None
+            and apply_k_norm_to_past_keys_before_cache_write
+        ):
+            past_keys = self.k_norm(past_keys)
 
         if use_kv_cache:
             if past_keys is not None:
                 assert past_values is not None
                 # concatenate past and current keys along the sequence dimension.
-                keys = torch.cat([past_keys, keys], dim=-2)
-                values = torch.cat([past_values, values], dim=-2)
-
+                if concat_kvs:
+                    keys = torch.cat([past_keys, keys], dim=-2)
+                    values = torch.cat([past_values, values], dim=-2)
+                else:
+                    # Use only the past_keys and past_values as keys and values.
+                    # NOTE: we can skip the KV projection in this case.
+                    assert queries.shape[-2] == past_keys.shape[-2]
+                    assert queries.shape[-2] == past_values.shape[-2]
+                    keys = past_keys
+                    values = past_values
             past_keys = keys
             past_values = values
+
+        if self.k_norm is not None and not apply_k_norm_before_cache_write:
+            assert (
+                not apply_k_norm_to_past_keys_before_cache_write
+            ), "k_norm has already been applied."
+            keys = self.k_norm(keys)
 
         # Add positional embedding
         queries, keys = self.pos_embedding(queries, keys)
@@ -511,6 +543,9 @@ class TransformerDecoderLayer(nn.Module):
         past_values: Optional[Tensor] = None,
         use_kv_cache: bool = False,
         is_causal: bool = True,
+        concat_kvs: bool = True,
+        apply_k_norm_to_past_keys_before_cache_write=False,
+        apply_k_norm_before_cache_write=True,
     ) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
         """
         Forward pass of decoder layer.
@@ -529,7 +564,14 @@ class TransformerDecoderLayer(nn.Module):
         # Pre-norm attention.
         y_attn = self.attn_norm(x)
         y_attn, past_keys, past_values = self.attn(
-            y_attn, past_keys, past_values, use_kv_cache, is_causal
+            y_attn,
+            past_keys,
+            past_values,
+            use_kv_cache,
+            is_causal,
+            concat_kvs,
+            apply_k_norm_to_past_keys_before_cache_write,
+            apply_k_norm_before_cache_write,
         )
         y_attn = x + y_attn
 
@@ -545,6 +587,8 @@ class GeneralGPTModel(BaseLanguageModel):
     Args:
         opts: Command-line arguments.
     """
+
+    config = GPTConfig
 
     def __init__(self, opts: argparse.Namespace, *args, **kwargs) -> None:
         super().__init__(opts, *args, **kwargs)
@@ -572,7 +616,7 @@ class GeneralGPTModel(BaseLanguageModel):
             opts, "model.language_modeling.general_gpt.padding_index"
         )
 
-        model_config = GPTConfig.from_name(
+        model_config = self.config.from_name(
             model_name=model_name,
             vocab_size=vocab_size,
             max_context_length=max_context_length,
@@ -640,7 +684,11 @@ class GeneralGPTModel(BaseLanguageModel):
         return parser
 
     def forward(
-        self, model_input: Union[Tensor, Dict[str, Tensor]]
+        self,
+        model_input: Union[Tensor, Dict[str, Tensor]],
+        concat_kvs: bool = True,
+        apply_k_norm_to_past_keys_before_cache_write=False,
+        apply_k_norm_before_cache_write=True,
     ) -> Union[Tensor, Dict[str, Tensor]]:
         """Forward function of GPT model.
 
@@ -662,6 +710,15 @@ class GeneralGPTModel(BaseLanguageModel):
                         These values can be None.
                     'use_kv_cache' indicates to use KV caching or not.
                     'is_causal' indicates to use causal masking in scaled dot-product attention or not.
+            concat_kvs: If set, the keys produced by the QKV projection will be concatenated
+                with the past keys. Usually this value should be True, but it needs to be False
+                for KV Prediction experiments.
+            apply_k_norm_to_past_keys_before_cache_write: If set, apply the key norm to past keys
+                before updating the KV cache. This usually should be False, but is set to True
+                for KV prediction experiments.
+            apply_k_norm_before_cache_write: If set, apply the key norm to the current keys
+                before concatenating them with the past keys. This usually should be True, but
+                is set to False for KV prediction experiments.
 
         Returns:
             Output of the model.
@@ -727,7 +784,14 @@ class GeneralGPTModel(BaseLanguageModel):
             past_values_layer_i = past_values[layer_idx]
 
             x, past_keys_layer_i, past_values_layer_i = self.layers[layer_idx](
-                x, past_keys_layer_i, past_values_layer_i, use_kv_cache, is_causal
+                x,
+                past_keys_layer_i,
+                past_values_layer_i,
+                use_kv_cache,
+                is_causal,
+                concat_kvs,
+                apply_k_norm_to_past_keys_before_cache_write,
+                apply_k_norm_before_cache_write,
             )
             # update the kv cache
             past_keys[layer_idx] = past_keys_layer_i
@@ -793,3 +857,18 @@ class GeneralGPTModel(BaseLanguageModel):
                 "ffn.proj_2.weight"
             ):
                 torch.nn.init.normal_(param, mean=0.0, std=std)
+
+    def head_dim_at_layer(self, i: int) -> int:
+        return self.layers[i].attn.head_dim
+
+    def k_dim_at_layer(self, i: int) -> int:
+        return self.layers[i].attn.head_dim * self.layers[i].attn.num_k_heads
+
+    def v_dim_at_layer(self, i: int) -> int:
+        return self.layers[i].attn.head_dim * self.layers[i].attn.num_v_heads
+
+    def k_num_heads_at_layer(self, i: int) -> int:
+        return self.layers[i].attn.num_k_heads
+
+    def v_num_heads_at_layer(self, i: int) -> int:
+        return self.layers[i].attn.num_v_heads

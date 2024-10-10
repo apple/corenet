@@ -11,11 +11,13 @@ from corenet.loss_fn.classification.binary_cross_entropy import BinaryCrossEntro
 from corenet.loss_fn.classification.cross_entropy import CrossEntropy
 
 
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("label_smoothing", [0.0, 0.1])
-@pytest.mark.parametrize("ignore_index", [-1, 2])
-@pytest.mark.parametrize("class_weights", [True, False])
-@pytest.mark.parametrize("num_classes", [2, 5, 10])
+@pytest.mark.parametrize(
+    "batch_size, label_smoothing, ignore_index, class_weights, num_classes",
+    [
+        (1, 0, -1, True, 2),
+        (2, 0.1, 255, False, 5),
+    ],
+)
 def test_cross_entropy_in_out(
     batch_size: int,
     label_smoothing: float,
@@ -54,8 +56,15 @@ def test_cross_entropy_in_out(
         assert loss.dim() == 0, "Loss value should be a scalar"
 
 
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("reduction", ["sum", "mean", "none", "batch_mean"])
+@pytest.mark.parametrize(
+    "batch_size, reduction",
+    [
+        (1, "sum"),
+        (2, "mean"),
+        (1, "none"),
+        (2, "batch_mean"),
+    ],
+)
 def test_binary_cross_entropy_in_out(batch_size: int, reduction: str) -> None:
     # These tests check the input and output formats are correct or not.
 

@@ -24,6 +24,8 @@ import numpy as np
 import pytest
 import torch
 
+from corenet import suppress_known_warnings
+
 session_timed_out = False
 
 
@@ -35,6 +37,7 @@ def handle_timeout(signum: int, frame: Optional[FrameType] = None) -> None:
 
 
 def pytest_sessionstart():
+    suppress_known_warnings()
     timeout = os.environ.get("PYTEST_GLOBAL_TIMEOUT", "")
     if not timeout:
         return

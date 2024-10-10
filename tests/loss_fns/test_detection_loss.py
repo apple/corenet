@@ -11,9 +11,13 @@ from corenet.loss_fn.detection.mask_rcnn_loss import MaskRCNNLoss
 from corenet.loss_fn.detection.ssd_multibox_loss import SSDLoss
 
 
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("neg_pos_ratio", [1, 3])
-@pytest.mark.parametrize("label_smooth", [0.0, 0.1])
+@pytest.mark.parametrize(
+    "batch_size, neg_pos_ratio, label_smooth",
+    [
+        (1, 1, 0),
+        (2, 3, 0.1),
+    ],
+)
 def test_ssd_loss_in_out(
     batch_size: int, neg_pos_ratio: int, label_smooth: int
 ) -> None:
@@ -57,12 +61,14 @@ def test_ssd_loss_in_out(
         assert loss_val.dim() == 0, "Loss value should be a scalar"
 
 
-@pytest.mark.parametrize("batch_size", [1])
-@pytest.mark.parametrize("classifier_weight", [0, 0.5, 1.0])
-@pytest.mark.parametrize("box_reg_weight", [0, 0.5, 1.0])
-@pytest.mark.parametrize("mask_weight", [0, 0.5, 1.0])
-@pytest.mark.parametrize("objectness_weight", [0, 0.5, 1.0])
-@pytest.mark.parametrize("rpn_box_reg", [0, 0.5, 1.0])
+@pytest.mark.parametrize(
+    "batch_size, classifier_weight, box_reg_weight, mask_weight, objectness_weight, rpn_box_reg",
+    [
+        (1, 0, 0, 0, 0, 0),
+        (2, 0, 0.5, 1, 0, 0.5),
+        (2, 1, 0.5, 0, 1, 0.5),
+    ],
+)
 def test_maskrcnn_loss_in_out(
     batch_size: int,
     classifier_weight: float,

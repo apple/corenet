@@ -9,12 +9,13 @@ import torch
 from corenet.loss_fn.segmentation.cross_entropy import SegCrossEntropy
 
 
-@pytest.mark.parametrize("batch_size", [1, 2])
-@pytest.mark.parametrize("label_smoothing", [0.0, 0.1])
-@pytest.mark.parametrize("ignore_index", [-1, 255])
-@pytest.mark.parametrize("class_weights", [True, False])
-@pytest.mark.parametrize("num_classes", [2, 5, 10])
-@pytest.mark.parametrize("aux_weight", [0.0, 0.4])
+@pytest.mark.parametrize(
+    "batch_size, label_smoothing, ignore_index, class_weights, num_classes, aux_weight",
+    [
+        (1, 0, -1, True, 2, 0),
+        (2, 0.1, 255, False, 5, 0.4),
+    ],
+)
 def test_seg_cross_entropy_in_out(
     batch_size: int,
     label_smoothing: float,

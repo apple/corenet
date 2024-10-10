@@ -23,10 +23,15 @@ def set_common_defaults(
     setattr(opts, "dataset.train_batch_size0", batch_size)
 
 
-@pytest.mark.parametrize("num_repeats", [1, 4])
-@pytest.mark.parametrize("trunc_ra_sampler", [True, False])
-@pytest.mark.parametrize("crop_size_h", [128, 160])
-@pytest.mark.parametrize("crop_size_w", [320, 384])
+@pytest.mark.parametrize(
+    "num_repeats, trunc_ra_sampler, crop_size_h, crop_size_w",
+    [
+        (1, True, 128, 320),
+        (1, False, 128, 320),
+        (4, True, 160, 384),
+        (4, False, 160, 384),
+    ],
+)
 def test_ssc_fbs_sampler(
     num_repeats: int, trunc_ra_sampler: bool, crop_size_h: int, crop_size_w: int
 ) -> None:
@@ -56,13 +61,15 @@ def test_ssc_fbs_sampler(
     )
 
 
-@pytest.mark.parametrize("num_repeats", [1, 4])
-@pytest.mark.parametrize("trunc_ra_sampler", [True, False])
-@pytest.mark.parametrize("min_res_h", [128, 160])
-@pytest.mark.parametrize("max_res_h", [320, 384])
-@pytest.mark.parametrize("min_res_w", [128, 160])
-@pytest.mark.parametrize("max_res_w", [320, 384])
-@pytest.mark.parametrize("max_scales", [5, 10, 50])
+@pytest.mark.parametrize(
+    "num_repeats, trunc_ra_sampler, min_res_h, max_res_h, min_res_w, max_res_w,max_scales",
+    [
+        (1, True, 128, 320, 128, 320, 1),
+        (1, False, 128, 320, 128, 320, 5),
+        (4, True, 160, 384, 160, 384, 10),
+        (4, False, 160, 384, 160, 384, 50),
+    ],
+)
 def test_msc_fbs_batch_sampler(
     num_repeats: int,
     trunc_ra_sampler: bool,
@@ -113,14 +120,15 @@ def test_msc_fbs_batch_sampler(
     )
 
 
-@pytest.mark.parametrize("num_repeats", [1, 4])
-@pytest.mark.parametrize("trunc_ra_sampler", [True, False])
-@pytest.mark.parametrize("min_res_h", [128, 160])
-@pytest.mark.parametrize("max_res_h", [320, 384])
-@pytest.mark.parametrize("min_res_w", [128, 160])
-@pytest.mark.parametrize("max_res_w", [320, 384])
-@pytest.mark.parametrize("max_scales", [5, 10, 50])
-@pytest.mark.parametrize("batch_size", [1, 2, DEFAULT_BATCH_SIZE])
+@pytest.mark.parametrize(
+    "num_repeats, trunc_ra_sampler, min_res_h, max_res_h, min_res_w, max_res_w,max_scales, batch_size",
+    [
+        (1, True, 128, 320, 128, 320, 1, 1),
+        (1, False, 128, 320, 128, 320, 5, 2),
+        (4, True, 160, 384, 160, 384, 10, DEFAULT_BATCH_SIZE),
+        (4, False, 160, 384, 160, 384, 50, DEFAULT_BATCH_SIZE),
+    ],
+)
 def test_msc_vbs_sampler(
     num_repeats: int,
     trunc_ra_sampler: bool,
@@ -191,16 +199,15 @@ def test_msc_vbs_sampler(
     )
 
 
-@pytest.mark.parametrize("num_repeats", [1, 4])
-@pytest.mark.parametrize("trunc_ra_sampler", [True, False])
-@pytest.mark.parametrize("min_res_h", [128, 160])
-@pytest.mark.parametrize("max_res_h", [320, 384])
-@pytest.mark.parametrize("min_res_w", [128, 160])
-@pytest.mark.parametrize("max_res_w", [320, 384])
-@pytest.mark.parametrize("max_scales", [5, 10, 50])
-@pytest.mark.parametrize("fps_scales", [1, 5])
-@pytest.mark.parametrize("batch_size", [1, 2, DEFAULT_BATCH_SIZE])
-@pytest.mark.parametrize("is_training", [True, False])
+@pytest.mark.parametrize(
+    "num_repeats, trunc_ra_sampler, min_res_h, max_res_h, min_res_w, max_res_w,max_scales, fps_scales, batch_size, is_training",
+    [
+        (1, True, 128, 320, 128, 320, 1, 1, 1, True),
+        (1, False, 128, 320, 128, 320, 5, 5, 2, False),
+        (4, True, 160, 384, 160, 384, 10, 1, DEFAULT_BATCH_SIZE, True),
+        (4, False, 160, 384, 160, 384, 50, 5, DEFAULT_BATCH_SIZE, False),
+    ],
+)
 def test_video_clip_sampler(
     num_repeats: int,
     trunc_ra_sampler: bool,

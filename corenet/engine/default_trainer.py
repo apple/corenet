@@ -4,7 +4,6 @@
 #
 
 import argparse
-import copy
 import gc
 import shutil
 import time
@@ -14,7 +13,6 @@ from typing import Dict, Optional, Tuple, Union
 import torch
 from torch import Tensor
 from torch.cuda.amp import GradScaler
-from torch.nn import functional as F
 
 from corenet.constants import DEFAULT_EPOCHS, DEFAULT_ITERATIONS, if_test_env
 from corenet.data.loader.dataloader import CoreNetDataLoader
@@ -25,6 +23,7 @@ from corenet.engine.utils import (
     get_batch_size,
     get_log_writers,
     log_metrics,
+    step_log_metrics,
 )
 from corenet.loss_fn import BaseCriteria
 from corenet.metrics.stats import Statistics
@@ -37,7 +36,6 @@ from corenet.utils import logger
 from corenet.utils.checkpoint_utils import save_checkpoint
 from corenet.utils.common_utils import move_to_device
 from corenet.utils.ddp_utils import dist_barrier, is_master
-from corenet.utils.tensor_utils import reduce_tensor_sum
 
 
 class DefaultTrainer(object):
@@ -383,13 +381,22 @@ class DefaultTrainer(object):
                     learning_rate=lr,
                     elapsed_time=epoch_start_time,
                 )
-
+                train_metrics = train_stats._compute_avg_statistics_all()
+                for log_writer in self.log_writers:
+                    step_log_metrics(
+                        lrs=lr,
+                        log_writer=log_writer,
+                        step=self.train_iterations,
+                        metrics=train_metrics,
+                    )
             batch_load_start = time.time()
 
         avg_loss = train_stats.avg_statistics(
             metric_name="loss", sub_metric_name="total_loss"
         )
-        train_stats.epoch_summary(epoch=epoch, stage="training")
+        train_stats.epoch_summary(
+            epoch=epoch, stage="training", epoch_time=time.time() - epoch_start_time
+        )
         avg_ckpt_metric = train_stats.avg_statistics(
             metric_name=self.ckpt_metric, sub_metric_name=self.ckpt_submetric
         )
@@ -417,6 +424,11 @@ class DefaultTrainer(object):
         time.sleep(
             if_test_env(0.5, otherwise=2)
         )  # To prevent possible deadlock during epoch transition
+
+        if self.is_master_node:
+            logger.double_dash_line()
+            logger.info(f"Validation epoch {epoch}")
+
         validation_stats = Statistics(
             opts=self.opts,
             metric_names=self.val_metric_names,
@@ -482,7 +494,11 @@ class DefaultTrainer(object):
                         learning_rate=lr,
                     )
 
-        validation_stats.epoch_summary(epoch=epoch, stage="validation" + extra_str)
+        validation_stats.epoch_summary(
+            epoch=epoch,
+            stage="validation" + extra_str,
+            epoch_time=time.time() - epoch_start_time,
+        )
         avg_loss = validation_stats.avg_statistics(
             metric_name="loss", sub_metric_name="total_loss"
         )

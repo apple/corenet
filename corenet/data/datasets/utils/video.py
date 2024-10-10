@@ -26,20 +26,19 @@
 """
 
 import functools
-from typing import Any, Collection, Dict, List, Optional, Tuple
+from typing import Any, Collection, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
 from corenet.utils import logger
 
 EPS = 1e-6
-FLOAT_TIMESTAMP_EPS = 1e-15
 
 
 def _simultaneous(
     this_timestamp: float,
     other_timestamp: float,
-    time_eps: float = FLOAT_TIMESTAMP_EPS,
+    time_eps: float = EPS,
 ) -> bool:
     return abs(this_timestamp - other_timestamp) < time_eps
 
@@ -57,7 +56,7 @@ def fetch_labels_from_timestamps(
     rectangles_dict: Dict[str, List[Dict[str, Any]]],
     interpolation_cutoff_threshold_sec: Optional[float] = None,
     progressible_labels: Optional[Collection[int]] = None,
-    carry_over_keys: Optional[List[str]] = None,
+    carry_over_keys: Optional[Union[List[str], Literal[True]]] = None,
     required_keys: Optional[List[str]] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Returns object labels for the specified video frame timestamps.
@@ -86,6 +85,7 @@ def fetch_labels_from_timestamps(
             resulting bounding boxes. If None, no `"progress"` field will be included.
         carry_over_keys: A list of keywords that specifies which keys should be carried
             over from the previous rectangle during interpolation. Defaults to None.
+            True means to carry over all keys.
         required_keys: A list of keywords that specifies which keywords need to be
             included in a new bounding_box in addition to the @class_label_name.
             Defaults to None.
@@ -144,17 +144,18 @@ def _make_fake_bbox(
 
     Returns:
         bounding box annotation at @timestamp that is not visible with all other values
-        set to -1.
+        set to None.
     """
     keys = rectangles_dict[list(rectangles_dict.keys())[0]][0].keys()
-    res = {key: -1 for key in keys}
+    res = {key: None for key in keys}
     res["is_visible"] = False
     res["timestamp"] = timestamp
     if required_keys is not None:
         for key in required_keys:
-            res[key] = -1
+            res[key] = None
+
     if progressible_labels is not None and len(progressible_labels) > 0:
-        res["progress"] = -1.0
+        res["progress"] = None
     return res
 
 
@@ -164,7 +165,7 @@ def _fetch_frame_label(
     rectangles_dict: Dict[str, List[Dict[str, Any]]],
     interpolation_cutoff_threshold_sec: Optional[float] = None,
     progressible_labels: Optional[Collection[int]] = None,
-    carry_over_keys: Optional[List[str]] = None,
+    carry_over_keys: Optional[Union[List[str], Literal[True]]] = None,
     required_keys: Optional[List[str]] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """Returns object labels for the specified video frame timestamp.
@@ -189,10 +190,11 @@ def _fetch_frame_label(
             same track) are so far apart (e.g. 10 seconds) that interpolation is
             non-sensical. Thus this value prevents unrelated labels from being
             interpolated.
-        progressible_labels: Set of labels for which to calculate `"progress"` for the
-            resulting bounding boxes. If None, no `"progress"` field will be included.
+        progressible_labels: Set of label values for which to calculate `"progress"` for
+            the resulting bounding boxes. If None, no `"progress"` field will be included.
         carry_over_keys: A list of keywords that specifies which keys should be carried
             over from the previous rectangle during interpolation. Defaults to None.
+            True means to carry over all keys.
         required_keys: A list of keywords that specifies which keywords need to be
             included in a new bounding_box in addition to the class_label_name. Defaults
             to None.
@@ -207,28 +209,21 @@ def _fetch_frame_label(
         if not (all_times) == sorted(all_times):
             raise RuntimeError("all_times should be sorted.")
 
-        numpy_times = np.array(all_times)
-
-        idx = np.searchsorted(numpy_times, timestamp, side="right")
-        if _before(timestamp, numpy_times[0]) or _before(numpy_times[-1], timestamp):
+        if _before(timestamp, all_times[0]) or _before(all_times[-1], timestamp):
             # The track doesn't exist or has ceased to exist.
             ret[track_label] = _make_fake_bbox(
                 rectangles_dict, timestamp, progressible_labels, required_keys
             )
             continue
 
-        # @before_idx must be positive. If np.searchsorted() returned 0, the above "if"
-        # statement would have been triggered.
-        before_idx = idx - 1
-        assert before_idx >= 0, f"Before_idx should be positive, but got {before_idx}."
-        before_time = numpy_times[before_idx]
+        idx = np.searchsorted(np.array(all_times), timestamp, side="right")
 
-        if idx == len(numpy_times):
-            after_idx = before_idx
-            after_time = before_time
-        else:
-            after_idx = idx
-            after_time = numpy_times[after_idx]
+        # idx may be at the start/end if the timestamp is within EPS
+        before_idx = max(idx - 1, 0)
+        after_idx = min(idx, len(all_times) - 1)
+
+        before_time = all_times[before_idx]
+        after_time = all_times[after_idx]
 
         # Either box for interpolation is invisible.
         if (
@@ -237,7 +232,7 @@ def _fetch_frame_label(
         ):
             # We make a fake annotation for invisible boxes.
             ret[track_label] = _make_fake_bbox(
-                rectangles_dict, timestamp, progressible_labels
+                rectangles_dict, timestamp, progressible_labels, required_keys
             )
             continue
 
@@ -258,8 +253,13 @@ def _fetch_frame_label(
             timestamp - before_time,
             after_time - before_time,
         )
-        new_label = {}
-        if carry_over_keys is not None:
+
+        if carry_over_keys is None:
+            new_label = {}
+        elif carry_over_keys is True:
+            # Copy the whole thing - bbox coords/timestamp are overridden below
+            new_label = {**track_rectangles[before_idx]}
+        else:
             new_label = {
                 key: track_rectangles[before_idx][key]
                 for key in carry_over_keys
@@ -268,7 +268,7 @@ def _fetch_frame_label(
 
         if required_keys is not None:
             for key in required_keys:
-                new_label[key] = track_rectangles[before_idx].get(key, -1)
+                new_label[key] = track_rectangles[before_idx].get(key, None)
         # New label will have updated coordinates and timestamp.
         new_label["x0"] = x0
         new_label["x1"] = x1
@@ -277,7 +277,7 @@ def _fetch_frame_label(
         new_label["timestamp"] = timestamp
 
         if progressible_labels is not None:
-            progress = -1.0
+            progress = None
             if track_rectangles[before_idx][class_label_name] in progressible_labels:
                 search_fn = functools.partial(
                     _search_for_label_edge_timestamp,
@@ -315,7 +315,7 @@ def _assert_progress_repr(
         else:
             # We shouldn't ever return the `"progress"` field while not returning a
             # 'progressible label'.
-            assert new_label["progress"] == -1.0
+            assert new_label["progress"] == None
 
 
 def _search_for_label_edge_timestamp(
@@ -412,6 +412,10 @@ def _interpolate_bounding_box(
         raise ValueError(
             f"@range_delta must be positive. Got range_delta={range_delta}."
         )
+
+    if range_delta < 1e-5:
+        return [before[key] for key in ["x0", "x1", "y0", "y1"]]
+
     if delta < 0 or delta - range_delta > EPS:
         # Some floating point arithmetic causes delta-range_delta to be a small value
         # above zero even if they're equal. Hence the epsilon.
@@ -422,11 +426,7 @@ def _interpolate_bounding_box(
 
     ret = []
     for key in ["x0", "x1", "y0", "y1"]:
-        if range_delta < 1e-5:
-            ret.append(before[key])
-        else:
-            alpha = 1.0 - delta / range_delta
-            interpolated_value = before[key] * alpha + after[key] * (1.0 - alpha)
-            ret.append(interpolated_value)
+        alpha = 1.0 - delta / range_delta
+        ret.append(before[key] * alpha + after[key] * (1.0 - alpha))
 
-    return tuple(ret)
+    return ret

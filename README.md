@@ -16,15 +16,14 @@ CoreNet is a deep neural network toolkit that allows researchers and engineers t
 
 ## What's new?
 
-   * ***April 2024***: Version 0.1.0 of the CoreNet library includes
-      * OpenELM
-      * CatLIP
-      * MLX examples
+   * ***October 2024***: Version 0.1.1 of the CoreNet library includes
+      * KV Prediction
 
 ## Research efforts at Apple using CoreNet
 
 Below is the list of publications from Apple that uses CoreNet. Also, training and evaluation recipes, as well as links to pre-trained models, can be found inside the [projects](./projects/) folder. Please refer to it for further details.
 
+   * [KV Prediction for Improved Time to First Token](TODO add arxiv link)
    * [OpenELM: An Efficient Language Model Family with Open Training and Inference Framework](https://arxiv.org/abs/2404.14619)
    * [CatLIP: CLIP-level Visual Recognition Accuracy with 2.7x Faster Pre-training on Web-scale Image-Text Data](https://arxiv.org/abs/2404.15653)
    * [Reinforce Data, Multiply Impact: Improved Model Accuracy and Robustness with Dataset Reinforcement](https://arxiv.org/abs/2303.08983)
@@ -138,8 +137,9 @@ Publication project directories generally contain the following contents:
 * `<task_name>/<model_name>.yaml` provides configuration for reproducing the trainings and evaluations.
 </td> <td> <pre>
 └── projects
+    ├── <a href="projects/kv-prediction">kv-prediction</a> (*)
     ├── <a href="projects/byteformer">byteformer</a>
-    ├── <a href="projects/catlip">catlip</a> (*)
+    ├── <a href="projects/catlip">catlip</a>
     ├── <a href="projects/clip">clip</a>
     ├── <a href="projects/fastvit">fastvit</a>
     ├── <a href="projects/mobilenet_v1">mobilenet_v1</a>
@@ -148,7 +148,7 @@ Publication project directories generally contain the following contents:
     ├── <a href="projects/mobileone">mobileone</a>
     ├── <a href="projects/mobilevit">mobilevit</a>
     ├── <a href="projects/mobilevit_v2">mobilevit_v2</a>
-    ├── <a href="projects/openelm">openelm</a> (*)
+    ├── <a href="projects/openelm">openelm</a>
     ├── <a href="projects/range_augment">range_augment</a>
     ├── <a href="projects/resnet">resnet</a>
     └── <a href="projects/vit">vit</a>
@@ -232,11 +232,11 @@ classes corresponding to the names that are referenced in the YAML configuration
 </table>
 
 ## Maintainers
-
-This code is developed by <a href="https://sacmehta.github.io" target="_blank">Sachin</a>, and is now maintained by Sachin, <a href="https://mchorton.com" target="_blank">Maxwell Horton</a>, <a href="https://www.mohammad.pro" target="_blank">Mohammad Sekhavat</a>, and Yanzi Jin.
+This code is developed and maintained by <a href="https://mchorton.com" target="_blank">Maxwell Horton</a>, <a href="https://www.mohammad.pro" target="_blank">Mohammad Sekhavat</a> Yanzi Jin, and <a href="https://huggingface.co/depthwise" target="_blank">Dmitry Belenko</a>.
 
 ### Previous Maintainers
-* <a href="https://farzadab.github.io" target="_blank">Farzad</a>
+* <a href="https://sacmehta.github.io" target="_blank">Sachin Mehta</a>
+* <a href="https://farzadab.github.io" target="_blank">Farzad Abdolhosseini</a>
 
 ## Contributing to CoreNet
 

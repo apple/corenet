@@ -6,8 +6,8 @@
 from corenet.constants import is_test_env
 
 
-class UnrecognizedYamlConfigEntry(Warning):
-    # TODO: consider converting UnrecognizedYamlConfigEntry Warning to an Exception.
+class UnrecognizedYamlConfigEntry(Exception):
+    # Throws exception when a key in yaml config is not recognized by argparser.
     def __init__(self, key: str) -> None:
         message = (
             f"Yaml config key '{key}' was not recognized by argparser. If you think that you have already added "

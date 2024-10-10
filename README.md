@@ -17,7 +17,7 @@ CoreNet is a deep neural network toolkit that allows researchers and engineers t
 ## What's new?
 
    * ***October 2024***: Version 0.1.1 of the CoreNet library includes
-      * KV Prediction
+      * [KV Prediction](./projects/kv-prediction/)
 
 ## Research efforts at Apple using CoreNet
 

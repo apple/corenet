@@ -20,7 +20,7 @@ from corenet.utils import logger
 class CrossEntropyForKVPrediction(BaseCriteria):
     """Cross entropy loss function for language modeling tasks.
 
-    Used in KV Prediction experiments. TODO add Arxiv link.
+    Used in KV Prediction experiments (https://arxiv.org/abs/2410.08391).
 
     Args:
         opts: Command-line arguments.

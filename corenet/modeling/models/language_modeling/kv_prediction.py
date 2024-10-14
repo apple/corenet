@@ -4,9 +4,7 @@
 #
 
 """
-A KV Prediction Model.
-
-TODO(mchorton): Add ArXiv link.
+A KV Prediction Model (https://arxiv.org/abs/2410.08391).
 
 The model contains 2 submodels. The smaller "auxiliary"
 model is used to quickly process context. The larger

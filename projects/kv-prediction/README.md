@@ -1,6 +1,6 @@
 # KV Prediction For Improved Time To First Token
 
-KV Prediction is a method for improving the time to first token (TTFT) of transformer models. It uses a small "auxiliary" transformer network to process the prompt efficiently. It then uses the KV cache of the auxiliary network to predict the KV cache of a larger "base" network. The base network is then used for inference without the need to query the auxiliary model again during autoregressive generation. Our method creates a pareto-optimal efficiency-accuracy trade-off for TTFT compared to baselines on benchmark datasets. See our paper for details.
+[KV Prediction](https://arxiv.org/abs/2410.08391) is a method for improving the time to first token (TTFT) of transformer models. It uses a small "auxiliary" transformer network to process the prompt efficiently. It then uses the KV cache of the auxiliary network to predict the KV cache of a larger "base" network. The base network is then used for inference without the need to query the auxiliary model again during autoregressive generation. Our method creates a pareto-optimal efficiency-accuracy trade-off for TTFT compared to baselines on benchmark datasets. See our paper for details.
 
 <p align="center">
 <img src="model_arch.png" width="50%" align="center">
@@ -28,8 +28,14 @@ We evaluate in the [LM Eval Harness](https://github.com/EleutherAI/lm-evaluation
 If you find our work useful, please cite:
 
 ```BibTeX
-@article{
-  TODO(mchorton): Add citation
+@misc{horton2024kvpredictionimprovedtime,
+      title={KV Prediction for Improved Time to First Token},
+      author={Maxwell Horton and Qingqing Cao and Chenfan Sun and Yanzi Jin and Sachin Mehta and Mohammad Rastegari and Moin Nabi},
+      year={2024},
+      eprint={2410.08391},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2410.08391},
 }
 
 @inproceedings{mehta2022cvnets, 

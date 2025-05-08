@@ -90,7 +90,7 @@ def _crop_fn(data: Dict, top: int, left: int, height: int, width: int) -> Dict:
 def _resize_fn(
     data: Dict,
     size: Union[Sequence, int],
-    interpolation: Optional[T.InterpolationMode or str] = T.InterpolationMode.BILINEAR,
+    interpolation: Optional[Union[T.InterpolationMode, str]] = T.InterpolationMode.BILINEAR,
 ) -> Dict:
     """Helper function for resizing"""
     img = data["image"]

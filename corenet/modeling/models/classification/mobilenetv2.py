@@ -4,7 +4,7 @@
 #
 
 import argparse
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from torch import nn
 
@@ -158,7 +158,7 @@ class MobileNetV2(BaseImageEncoder):
     def _make_layer(
         self,
         opts,
-        mv2_config: Dict or List,
+        mv2_config: Union[Dict, List],
         width_mult: float,
         input_channel: int,
         dilate: Optional[bool] = False,

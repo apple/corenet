@@ -166,7 +166,7 @@ class Statistics(object):
         n_processed_samples: int,
         total_samples: int,
         elapsed_time: float,
-        learning_rate: float or list,
+        learning_rate: Union[float, list],
     ) -> None:
         if self.is_master_node:
             metric_stats = self._avg_statistics_all()

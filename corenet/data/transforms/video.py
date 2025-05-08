@@ -801,7 +801,7 @@ class CenterCrop(BaseTransformation):
         size.
     """
 
-    def __init__(self, opts, size: Sequence or int, *args, **kwargs) -> None:
+    def __init__(self, opts, size: Union[Sequence, int], *args, **kwargs) -> None:
         super().__init__(opts=opts)
         if isinstance(size, Sequence) and len(size) == 2:
             self.height, self.width = size[0], size[1]

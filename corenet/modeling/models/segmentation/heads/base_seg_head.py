@@ -4,7 +4,7 @@
 #
 
 import argparse
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 from torch import Tensor, nn
 
@@ -97,7 +97,7 @@ class BaseSegHead(BaseAnyNNModel):
     def forward_seg_head(self, enc_out: Dict) -> Tensor:
         raise NotImplementedError
 
-    def forward(self, enc_out: Dict, *args, **kwargs) -> Tensor or Tuple[Tensor]:
+    def forward(self, enc_out: Dict, *args, **kwargs) -> Union[Tensor, Tuple[Tensor]]:
         out = self.forward_seg_head(enc_out=enc_out)
 
         if self.upsample_seg_out is not None:

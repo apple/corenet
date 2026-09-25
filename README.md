@@ -242,7 +242,7 @@ This code is developed and maintained by <a href="https://mchorton.com" target="
 
 We welcome PRs from the community! You can find information about contributing to CoreNet in our [contributing](CONTRIBUTING.md) document. 
 
-Please remember to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+Please remember to follow our [Code of Conduct](https://github.com/apple/.github/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 

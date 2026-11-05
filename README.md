@@ -96,6 +96,40 @@ list the directories `ls`. You can switch to such a path with the `cd $(pwd -P)`
 command.
 
 
+For Windows, assuming you use Git for Windows:
+
+```bash
+# Download and install from: https://git-scm.com/download/win (includes Git LFS)
+git lfs install
+
+git clone git@github.com:apple/corenet.git
+cd corenet
+git lfs pull
+```
+
+The following venv command is optional, but recommended. Alternatively, you can create and activate a conda environment.
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install --editable .
+```
+
+To install optional dependencies for audio and video processing:
+Via Chocolatey (install from https://chocolatey.org/install)
+
+```bash
+choco install ffmpeg
+```
+
+Or via Scoop (install from https://scoop.sh/)
+
+```bash
+scoop install ffmpeg
+```
+
+Note that on Windows you should use Git Bash, PowerShell, or Command Prompt. The backslash path separator (\) is used for virtual environment activation, and no case sensitivity adjustments are needed as Windows filesystem is case insensitive by default
+
 ## Directory Structure
 
 This section provides quick access and a brief description for important CoreNet directories.
